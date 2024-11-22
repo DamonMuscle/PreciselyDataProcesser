@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration>
+    <Precisely data-version='032024' gdb-data-location='D:\PreciselyData\FGDB' />
+    <Environment>
+        <ArcGIS>
+            <Portal url='' user-name='' password='' />
+            <Server admin-url='' user-name='' password='' />
+            <Services>
+                <MapService>
+                    <SERVICE_NAME>MapEditingOneService</SERVICE_NAME>
+                    <MIN_INSTANCES>5</MIN_INSTANCES>
+                    <MAX_INSTANCES>20</MAX_INSTANCES>
+                    <WAIT_TIMEOUT>600</WAIT_TIMEOUT>
+                </MapService>
+                <NAService>
+                    <SERVICE_NAME>RouteService</SERVICE_NAME>
+                    <MIN_INSTANCES>10</MIN_INSTANCES>
+                    <MAX_INSTANCES>100</MAX_INSTANCES>
+                    <WAIT_TIMEOUT>600</WAIT_TIMEOUT>
+                </NAService>
+                <GeocodeService>
+                    <SERVICE_NAME>StreetGeocodeService</SERVICE_NAME>
+                    <MIN_INSTANCES>5</MIN_INSTANCES>
+                    <MAX_INSTANCES>20</MAX_INSTANCES>
+                    <WAIT_TIMEOUT>600</WAIT_TIMEOUT>
+                </GeocodeService>
+                <GPService>
+                    <SERVICE_NAME>TFUtilitiesGPService</SERVICE_NAME>
+                    <MIN_INSTANCES>5</MIN_INSTANCES>
+                    <MAX_INSTANCES>20</MAX_INSTANCES>
+                    <WAIT_TIMEOUT>600</WAIT_TIMEOUT>
+                </GPService>
+            </Services>
+        </ArcGIS>
+        <Converter version='20241021'>
+            <Templates location='D:\GISWorkspace\Templates'>
+                <NDTemplate name='National_Routing_ND_Template2' />
+                <VectorTile folder-name='VectorTile' />
+                <MMPKTemplate project-file='NationalMapMMPK.aprx' />
+                <BlankTemplate project-file='blank.aprx' />
+            </Templates>
+            <Outputs>
+                <GDB location='D:\GISWorkspace\Results' name='TF_National' with-version='true' />
+                <VectorTile folder-name='National_Vector_Tile_Packages' />
+                <Locator folder-name='Locator' name='National_Street_Address_1021' />
+            </Outputs>
+        </Converter>
+    </Environment>
+    <Adaptor support-routefinder-plus='true'></Adaptor>
+    <Logging>
+        <Level>DEBUG</Level>  <!-- DEBUG | INFO -->
+        <FileName>National_Map_Log_1021</FileName>
+    </Logging>
+    <DebugMode activate='true'>
+        <Processes>
+            <Process name='create_out_GDB' skip='false' />
+            <Process name='combine_state_data_to_national' skip='false' />
+            <Process name='process_national_data' skip='false' />
+            <Process name='prepare_routing_dataset' skip='false' />
+            <Process name='process_national_restrictions' skip='false' />
+            <Process name='process_national_signposts' skip='false' />
+            <Process name='process_vector_data' skip='false' />
+            <Process name='process_locator' skip='false' />
+            <Process name='process_network_dataset' skip='false' />
+            <Process name='process_mobile_map_package' skip='false' />
+            <Process name='publish_national_map_service' skip='false' />
+        </Processes>
+    </DebugMode>
+</Configuration>
