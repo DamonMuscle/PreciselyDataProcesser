@@ -1,7 +1,7 @@
 import os
 
 import arcpy
-from national_map import constants
+import constants
 
 from state_converter import StateConverter
 from national_map_utility import NationalMapUtility
@@ -73,12 +73,11 @@ def _get_plus_street_mapping_fields(source: str) -> str:
         f'ROAD_CLASS "ROAD_CLASS" true true false 2 Text 0 0,First,#,{source},ROAD_CLASS,0,1;'
         f'LENGTH_GEO "LENGTH_GEO" true true false 8 Double 0 0,First,#,{source},LENGTH,-1,-1;'
         f'SPEED "SPEED" true true false 4 Long 0 0,First,#,{source},SPEED,-1,-1;'
-        f'Oneway "Oneway" true true false 4 Long 0 0,First,#,{source},ONEWAY,-1,-1;'
+        f'Oneway "Oneway" true true false 255 Text 0 0,First,#,{source},ONEWAY,-1,-1;'
         f'ROUGHRD "ROUGHRD" true true false 4 Long 0 0,First,#,{source},ROUGHRD,-1,-1;'
-        f'FromElevation "FromElevation" true true false 4 Long 0 0,First,#,{source},LEVEL_BEG,-1,-1;'
-        f'ToElevation "ToElevation" true true false 4 Long 0 0,First,#,{source},LEVEL_END,-1,-1;'
+        f'FromElevation "FromElevation" true true false 2 Short 0 0,First,#,{source},LEVEL_BEG,-1,-1;'
+        f'ToElevation "ToElevation" true true false 2 Short 0 0,First,#,{source},LEVEL_END,-1,-1;'
         f'HeightClearance "HeightClearance" true true false 8 Double 0 0,First,#,{source},MAX_HEIGHT,-1,-1;'
-        f'MAX_WIDTH "MAX_WIDTH" true true false 8 Double 0 0,First,#,{source},MAX_WIDTH,-1,-1;'
         f'WeightLimit "WeightLimit" true true false 8 Double 0 0,First,#,{source},MAX_WEIGHT,-1,-1;'
         f'LocalId "LocalId" true true false 255 Text 0 0,First,#,{source},FEATURE_ID,0,35'
     )
@@ -103,6 +102,10 @@ class StateStreetConverter(StateConverter):
     def _add_field(self, field_name, field_type, field_length=None):
         street_feature_class = self.data['state_street_feature_class']
         NationalMapUtility.add_field(street_feature_class, field_name, field_type, field_length)
+
+    def _drop_fields(self, field_name_list):
+        street_feature_class = self.data['state_street_feature_class']
+        arcpy.management.DeleteField(street_feature_class, field_name_list)
 
     def _calculate_field(self, field_name, expression):
         street_feature_class = self.data['state_street_feature_class']
@@ -222,7 +225,7 @@ class StateStreetConverter(StateConverter):
         message = f'_calculate_road_class {self.state}'
         NationalMapLogger.debug(message)
 
-        self._add_field('RoadClass', 'SHORT')
+        self._add_field('RoadClass', 'LONG')
         self._calculate_default_road_class()
         self._cast_highways()
         self._cast_major_road()
@@ -261,13 +264,13 @@ class StateStreetConverter(StateConverter):
         field_name = 'Speedleft'
         self._add_field(field_name, 'LONG')
         self._calculate_field(field_name, '!SPEED!')
-        self._cast_field_template(field_name, field_value=0, where_clause='ONEWAY = 2')
+        self._cast_field_template(field_name, field_value=0, where_clause="Oneway = '2'")
 
     def _calculate_speed_right(self):
         field_name = 'Speedright'
         self._add_field(field_name, 'LONG')
         self._calculate_field(field_name, '!SPEED!')
-        self._cast_field_template(field_name, field_value=0, where_clause='ONEWAY = 3')
+        self._cast_field_template(field_name, field_value=0, where_clause="Oneway = '3'")
 
     def _calculate_oneway(self):
         message = f"_calculate_oneway {self.state}"
@@ -324,7 +327,7 @@ class StateStreetConverter(StateConverter):
         field_name = 'Traversable'
         self._add_field(field_name, 'SHORT')
         self._calculate_field(field_name, 1)
-        self._cast_field_template(field_name, field_value=0, where_clause='ONEWAY = 4 AND RoadClass IN (10, 12)')
+        self._cast_field_template(field_name, field_value=0, where_clause="ONEWAY = '4' AND RoadClass IN (10, 12)")
         self._cast_field_template(field_name, field_value=0, where_clause='ROUGHRD = 1')
 
     def _calculate_traversable(self):
@@ -376,6 +379,11 @@ class StateStreetConverter(StateConverter):
                                                   clear_value='DO_NOT_CLEAR')
             self._calculate_field(field_name, 0)
 
+    def _add_cfcc(self):
+        field_name = 'Cfcc'
+        self._add_field(field_name, 'TEXT', 255)
+        self._calculate_field(field_name, '!RoadClass!')
+
     def _duplicate_fields_for_plus(self):
         message = f'_duplicate_fields_for_plus {self.state}'
         NationalMapLogger.debug(message)
@@ -385,23 +393,25 @@ class StateStreetConverter(StateConverter):
         # self._add_from_to_to_from()
         self._add_left_post_code()
         self._add_right_post_code()
-        self._add_state_left()
-        self._add_state_right()
+        # self._add_state_left()
+        # self._add_state_right()
+        self._add_cfcc()
         self._add_prohibit_crosser()
 
-    def _remove_fields_for_plus(self):
-        message = f'_remove_fields_for_plus {self.state}'
+    def _match_up_to_plus(self):
+        message = f'_match_up_to_plus {self.state}'
         NationalMapLogger.debug(message)
 
-        street_feature_class = self.data['state_street_feature_class']
         # Remove useless fields on routefinder plus
-        drop_fields = ['ROUGHRD', 'Postcode_Left', 'Postcode_Right', 'LOCALITY_CODE_LEFT', 'LOCALITY_CODE_RIGHT']
-        arcpy.management.DeleteField(street_feature_class, drop_fields)
+        fields = ['ROUGHRD', 'Postcode_Left', 'Postcode_Right',
+                  'LOCALITY_CODE_LEFT', 'LOCALITY_CODE_RIGHT',
+                  'streettype', 'ROAD_CLASS', 'Traversable', 'SPEED']
+        self._drop_fields(fields)
 
-    def _consistent_fields_for_plus(self):
+        # Add fields
         self._add_field('GroupID', 'DOUBLE')
         self._add_field('Style', 'TEXT', 255)
-        self._add_field('Cfcc', 'TEXT', 255)
+        # self._add_field('Cfcc', 'TEXT', 255)
         self._add_field('Lock', 'TEXT', 255)
         self._add_field('Fow', 'SHORT')
 
@@ -428,8 +438,7 @@ class StateStreetConverter(StateConverter):
         self._calculate_traversable()
 
         self._duplicate_fields_for_plus()
-        self._remove_fields_for_plus()
-        self._consistent_fields_for_plus()
+        self._match_up_to_plus()
 
     def _project_state_street(self):
         out_features = self.data['state_street_feature_class']
@@ -444,4 +453,3 @@ class StateStreetConverter(StateConverter):
         self._modify_street_fields()
         self._project_state_street()
         self._clear_workspace()
-

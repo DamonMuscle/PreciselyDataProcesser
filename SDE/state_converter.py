@@ -1,5 +1,5 @@
 import arcpy
-from national_map import constants
+import constants
 
 
 class StateConverter:
@@ -26,3 +26,4 @@ class StateConverter:
         memory_layer = f'{constants.TEMP_MEMORY_LAYER}_{self.state}'
         if arcpy.Exists(memory_layer):
             arcpy.management.Delete(memory_layer)
+            arcpy.management.Delete("memory")

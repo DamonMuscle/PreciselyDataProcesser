@@ -4,7 +4,7 @@ import arcpy
 
 from national_map_logger import NationalMapLogger
 from national_map_utility import NationalMapUtility
-from national_map import constants
+import constants
 
 
 def add_editable_fields(layer):
@@ -197,7 +197,7 @@ class StateExporter:
         self.project_state_data(out_features, constants.GDB_ITEMS_DICT['STATE']['railroad_name'])
 
     def _export_state_landuse(self):
-        scratch_name = 'temp_airports_features'
+        scratch_name = 'temp_landuse_features'
         landuse_name = f'{self.state}landuse'
         in_features = self.get_precisely_feature_path(landuse_name)
         out_features = None
@@ -259,6 +259,7 @@ class StateExporter:
         out_features = self._get_scratch_feature_class(state_landmark_polyline)
         add_name_field(out_features)
         add_style_field(out_features)
+        add_local_id_field(out_features)
         add_editable_fields(out_features)
 
     def _export_state_landmarks_point(self):
@@ -316,8 +317,6 @@ class StateExporter:
         out_features = self._export_temp_postcodes_features()
         self._join_city_and_state(out_features)
 
-        arcpy.management.DeleteField(out_features, ['Join_Count'])
-
         add_name_field(out_features)
         arcpy.management.CalculateField(out_features, 'Name', '!PostalCode!')
 
@@ -326,6 +325,9 @@ class StateExporter:
         arcpy.management.CalculateField(out_features, 'LocalId', '!PostalCode!')
 
         add_editable_fields(out_features)
+
+        drop_fields = ['Join_Count', 'PC_Name', 'PostalCode']
+        arcpy.management.DeleteField(out_features, drop_fields)
 
         self.project_state_data(out_features, constants.GDB_ITEMS_DICT['STATE']['postcode_name'])
 
@@ -338,4 +340,3 @@ class StateExporter:
         self._export_state_rivers()
         self._export_state_water_bodies()
         self._export_state_counties()
-

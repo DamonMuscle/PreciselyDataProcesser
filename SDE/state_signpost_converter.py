@@ -1,10 +1,10 @@
 import arcpy
-from national_map import constants
+import constants
 
 from state_converter import StateConverter
 from national_map_utility import NationalMapUtility
 
-MAX_SIGNPOST_EDGES = 5
+MAX_SIGNPOST_EDGES = 10
 
 EDGE_POSITION_DICT = {
     'Y': {
@@ -96,15 +96,15 @@ def create_signpost_feature(signpost_id, signpost_geometry, destination_lookup):
 
 
 def add_signpost_fields(signpost_feature_class):
-    NationalMapUtility.add_field(signpost_feature_class, 'ExitName', 'TEXT', 24)
+    NationalMapUtility.add_field(signpost_feature_class, 'ExitName', 'TEXT', 255)
     for i in range(MAX_SIGNPOST_EDGES):
-        NationalMapUtility.add_field(signpost_feature_class, f'Branch{i}', 'TEXT', 180)
-        NationalMapUtility.add_field(signpost_feature_class, f'Branch{i}Dir', 'TEXT', 5)
-        NationalMapUtility.add_field(signpost_feature_class, f'Branch{i}Lng', 'TEXT', 2)
-        NationalMapUtility.add_field(signpost_feature_class, f'Toward{i}', 'TEXT', 180)
-        NationalMapUtility.add_field(signpost_feature_class, f'Toward{i}Lng', 'TEXT', 2)
+        NationalMapUtility.add_field(signpost_feature_class, f'Branch{i}', 'TEXT', 255)
+        NationalMapUtility.add_field(signpost_feature_class, f'Branch{i}Dir', 'TEXT', 255)
+        NationalMapUtility.add_field(signpost_feature_class, f'Branch{i}Lng', 'TEXT', 255)
+        NationalMapUtility.add_field(signpost_feature_class, f'Toward{i}', 'TEXT', 255)
+        NationalMapUtility.add_field(signpost_feature_class, f'Toward{i}Lng', 'TEXT', 255)
 
-    NationalMapUtility.add_field(signpost_feature_class, 'SrcSignID', 'TEXT', 36)
+    NationalMapUtility.add_field(signpost_feature_class, 'SrcSignID', 'TEXT', 255)
 
 
 def add_signpost_table_fields(signpost_table):
@@ -114,8 +114,8 @@ def add_signpost_table_fields(signpost_table):
     NationalMapUtility.add_field(signpost_table, 'EdgeFID', 'LONG')
     NationalMapUtility.add_field(signpost_table, 'EdgeFrmPos', 'DOUBLE')
     NationalMapUtility.add_field(signpost_table, 'EdgeToPos', 'DOUBLE')
-    NationalMapUtility.add_field(signpost_table, 'SegmentID', 'TEXT', 36)
-    NationalMapUtility.add_field(signpost_table, 'SrcSignID', 'TEXT', 36)
+    NationalMapUtility.add_field(signpost_table, 'SegmentID', 'TEXT', 255)
+    NationalMapUtility.add_field(signpost_table, 'SrcSignID', 'TEXT', 255)
 
 
 def get_signpost_oid(lookup, signpost_id):

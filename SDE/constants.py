@@ -16,7 +16,12 @@ COUNTY_CODE = 'USA'
 LOCATOR_LANGUAGE_CODE = 'ENG'
 
 
-TEMP_MEMORY_LAYER = f'memory{os.sep}layer'
+TEMP_MEMORY_LAYER = os.path.join('memory', 'layer')
+
+OUT_FORMAT = {
+    'SDE': 'SDE',
+    'FILE_GDB': 'FILEGDB'
+}
 
 GDB_ITEMS_DICT = {
     'NATIONAL': {
@@ -63,4 +68,11 @@ GDB_ITEMS_DICT = {
 NATIONAL_NETWORK_DATASET_NAME = 'national_routing_ND'
 DEFAULT_GEODATABASE_SCHEMA = 'DBO'
 
-
+MMPK_DATA_SOURCE = {
+    'Map_Turn': GDB_ITEMS_DICT['NATIONAL']['DATASET']['turn_name'],
+    'MAP_STREET': GDB_ITEMS_DICT['NATIONAL']['DATASET']['street_name'],
+    'STREETINTERSECTR': GDB_ITEMS_DICT['NATIONAL']['street_railroad_intersect_name'],
+    'routing_ND_Junctions': f'{NATIONAL_NETWORK_DATASET_NAME}_Junctions',
+    'StreetPolygon': GDB_ITEMS_DICT['NATIONAL']['street_polygon_name'],
+    'national_routing_ND': NATIONAL_NETWORK_DATASET_NAME
+}

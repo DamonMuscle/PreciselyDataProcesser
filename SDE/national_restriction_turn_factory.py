@@ -2,9 +2,9 @@ import os.path
 
 import arcpy
 
-from national_sde_data_factory import NationalSDEDataFactory
+from national_gdb_data_factory import NationalGDBDataFactory
 from national_map_utility import NationalMapUtility
-from national_map import constants
+import constants
 
 MAX_TURN_EDGES = 5
 
@@ -26,17 +26,17 @@ def get_turn_feature_template(restriction_id):
 
 def add_turn_fields(turn_feature_class):
     NationalMapUtility.add_field(turn_feature_class, 'RestrictionID', 'TEXT', 36)
-    NationalMapUtility.add_field(turn_feature_class, 'ProhibitedTurnFlag', 'SHORT')
-    NationalMapUtility.add_field(turn_feature_class, 'RestrictedTurnFlag', 'SHORT')
+    NationalMapUtility.add_field(turn_feature_class, 'ProhibitedTurnFlag', 'SHORT', field_is_nullable='NON_NULLABLE')
+    NationalMapUtility.add_field(turn_feature_class, 'RestrictedTurnFlag', 'SHORT', field_is_nullable='NON_NULLABLE')
 
 
-class NationalRestrictionTurnFactory(NationalSDEDataFactory):
+class NationalRestrictionTurnFactory(NationalGDBDataFactory):
     """
     Generate national map turn features from restriction features.
     """
 
-    def __init__(self, sde_connection):
-        super().__init__(sde_connection)
+    def __init__(self, workspace):
+        super().__init__(workspace)
         self.turn_feature_class = None
 
     def __del__(self):
@@ -45,21 +45,21 @@ class NationalRestrictionTurnFactory(NationalSDEDataFactory):
 
     def _get_restriction_feature_class(self):
         restriction_name = constants.GDB_ITEMS_DICT['NATIONAL']['restriction_name']
-        return os.path.join(self.sde_connection, restriction_name)
+        return os.path.join(self.workspace, restriction_name)
 
     def _get_turn_feature_class(self):
-        sde_dataset = self._get_sde_dataset()
+        dataset = self._get_dataset()
         turn_name = constants.GDB_ITEMS_DICT['NATIONAL']['DATASET']['turn_name']
-        return os.path.join(sde_dataset, turn_name)
+        return os.path.join(dataset, turn_name)
 
     def _create_turn_feature_class(self):
         turn_feature_class = self._get_turn_feature_class()
         if arcpy.Exists(turn_feature_class):
             arcpy.management.Delete(turn_feature_class)
 
-        sde_dataset = self._get_sde_dataset()
+        dataset = self._get_dataset()
         turn_name = constants.GDB_ITEMS_DICT['NATIONAL']['DATASET']['turn_name']
-        self.turn_feature_class = arcpy.na.CreateTurnFeatureClass(sde_dataset, turn_name, MAX_TURN_EDGES)
+        self.turn_feature_class = arcpy.na.CreateTurnFeatureClass(dataset, turn_name, MAX_TURN_EDGES)
         add_turn_fields(self.turn_feature_class)
 
     def _create_turn_features(self):
@@ -80,10 +80,11 @@ class NationalRestrictionTurnFactory(NationalSDEDataFactory):
         restriction_groups = self._generate_restriction_groups()
         print(f'_generate_turn_features, restriction_groups count: {len(restriction_groups)}')
 
+        feature_class_id = self.get_street_feature_class_id()
         for group in restriction_groups:
             restriction_id = list(group.keys())[0]
             restriction_items = group[restriction_id]
-            feature = self._generate_prohibited_turn(restriction_id, restriction_items)
+            feature = self._generate_prohibited_turn(feature_class_id, restriction_id, restriction_items)
             if feature is not None:
                 turn_features.append(feature)
 
@@ -114,10 +115,8 @@ class NationalRestrictionTurnFactory(NationalSDEDataFactory):
 
         return groups
 
-    def _generate_prohibited_turn(self, restriction_id, restriction_items):
+    def _generate_prohibited_turn(self, feature_class_id, restriction_id, restriction_items):
         feature = get_turn_feature_template(restriction_id)
-
-        feature_class_id = self.get_street_feature_class_id()
 
         union_geometry, edge_end = None, None
         first_geometry, second_geometry = None, None
@@ -130,9 +129,9 @@ class NationalRestrictionTurnFactory(NationalSDEDataFactory):
             feature[start_index + 1] = self._get_street_object_id(feature_id)
             feature[start_index + 2] = EDGE_POSITION
 
-            if index == 0:
+            if union_geometry is None:
                 union_geometry = geometry
-            else:
+            elif geometry is not None:
                 union_geometry = union_geometry | geometry
 
             if index == 0:
@@ -161,7 +160,13 @@ class NationalRestrictionTurnFactory(NationalSDEDataFactory):
             fields='State;City'
         )
 
+    def _match_up_to_plus(self):
+        turn_feature_class = self._get_turn_feature_class()
+        drop_fields = ['RestrictionID']
+        arcpy.management.DeleteField(turn_feature_class, drop_fields)
+
     def run(self):
         self._create_turn_feature_class()
         self._create_turn_features()
         self._add_state_and_city()
+        self._match_up_to_plus()

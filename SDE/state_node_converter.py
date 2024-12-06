@@ -1,5 +1,5 @@
 import arcpy
-from national_map import constants
+import constants
 
 from national_map_logger import NationalMapLogger
 from state_converter import StateConverter
@@ -59,4 +59,3 @@ class StateNodeConverter(StateConverter):
         self._exclude_untouched_nodes()
         self._project_state_node()
         self._clear_workspace()
-

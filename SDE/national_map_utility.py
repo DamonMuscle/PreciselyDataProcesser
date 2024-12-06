@@ -29,10 +29,11 @@ class NationalMapUtility:
         return result
 
     @staticmethod
-    def add_field(in_table, field_name, field_type, field_length=None) -> bool:
+    def add_field(in_table, field_name, field_type, field_length=None, field_is_nullable='NULLABLE') -> bool:
         result = False
         if not NationalMapUtility.is_field_exists(in_table, field_name):
-            arcpy.management.AddField(in_table, field_name, field_type, field_length=field_length)
+            arcpy.management.AddField(in_table, field_name, field_type,
+                                      field_length=field_length, field_is_nullable=field_is_nullable)
             result = True
 
         return result
@@ -71,4 +72,3 @@ class NationalMapUtility:
     def is_feature_class(feature_class_or_table) -> bool:
         desc = arcpy.Describe(feature_class_or_table)
         return hasattr(desc, 'featureType')
-

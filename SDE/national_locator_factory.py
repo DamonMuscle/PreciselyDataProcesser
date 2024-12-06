@@ -2,15 +2,15 @@ from string import Template
 import arcpy
 
 
-from national_sde_data_factory import NationalSDEDataFactory
+from national_gdb_data_factory import NationalGDBDataFactory
 from national_map_utility import NationalMapUtility
 from national_map_logger import NationalMapLogger
-from national_map import constants
+import constants
 
 
-class NationalLocatorFactory(NationalSDEDataFactory):
-    def __init__(self, configuration, sde_connection):
-        super().__init__(sde_connection)
+class NationalLocatorFactory(NationalGDBDataFactory):
+    def __init__(self, configuration, workspace):
+        super().__init__(workspace)
         self.configuration = configuration
         self.locator = None
 
@@ -25,7 +25,7 @@ class NationalLocatorFactory(NationalSDEDataFactory):
 
     def _create_locator(self):
         NationalMapLogger.debug('_create_locator')
-        arcpy.env.workspace = self._get_sde_dataset()
+        arcpy.env.workspace = self._get_dataset()
         address_type = 'StreetAddress'
 
         street_name = constants.GDB_ITEMS_DICT['NATIONAL']['DATASET']['street_name']

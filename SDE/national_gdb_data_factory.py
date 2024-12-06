@@ -12,25 +12,25 @@ def create_street_local_id_and_oid_lookup(sde_street_feature_class):
     }
 
 
-class NationalSDEDataFactory:
+class NationalGDBDataFactory:
 
-    def __init__(self, sde_connection):
-        self.sde_connection = sde_connection
+    def __init__(self, workspace):
+        self.workspace = workspace
         self.street_local_id_oid_lookup = None
         self._init_street_lookup()
 
     def __del__(self):
-        del self.sde_connection
+        del self.workspace
         del self.street_local_id_oid_lookup
 
-    def _get_sde_dataset(self):
+    def _get_dataset(self):
         dataset_name = constants.GDB_ITEMS_DICT['NATIONAL']['DATASET']['name']
-        return os.path.join(self.sde_connection, dataset_name)
+        return os.path.join(self.workspace, dataset_name)
 
     def _get_street_feature_class(self):
-        sde_dataset = self._get_sde_dataset()
+        dataset = self._get_dataset()
         street_name = constants.GDB_ITEMS_DICT['NATIONAL']['DATASET']['street_name']
-        feature_class = os.path.join(sde_dataset, street_name)
+        feature_class = os.path.join(dataset, street_name)
         return feature_class
 
     def get_street_feature_class_id(self):
@@ -54,7 +54,7 @@ class NationalSDEDataFactory:
             return None
 
     def _get_enterprise_database_connection(self):
-        sql_connection = arcpy.ArcSDESQLExecute(self.sde_connection)
+        sql_connection = arcpy.ArcSDESQLExecute(self.workspace)
         return sql_connection
 
     def execute_sql(self, sql_statement):

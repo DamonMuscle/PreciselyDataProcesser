@@ -60,6 +60,11 @@ class NationalMapLogger:
         NationalMapLogger.logger.debug(message)
 
     @staticmethod
+    def warning(message):
+        print(f'WARN: {message}')
+        NationalMapLogger.logger.warning(message)
+
+    @staticmethod
     def error(message):
         print(f'ERROR: {message}')
         NationalMapLogger.logger.error(message)

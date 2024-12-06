@@ -1,5 +1,5 @@
 import arcpy
-from national_map import constants
+import constants
 
 from state_converter import StateConverter
 

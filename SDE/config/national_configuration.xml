@@ -11,21 +11,27 @@
 	<ArcGIS>
 		<EnterpriseGeodatabase>
 			<AuthorizationFile>C:\Program Files\ESRI\License11.2\sysgen\keycodes</AuthorizationFile>
-			<SQLServerInstance>192.168.9.107</SQLServerInstance>
-			<DatabaseName>TF_National_Maps_1122</DatabaseName>
-			<DatabaseAdministrator>tfuser</DatabaseAdministrator>
-			<DatabaseAdministratorPassword>$transfinder2006</DatabaseAdministratorPassword>
+			<SQLServerInstance></SQLServerInstance>
+			<DatabaseAdministrator></DatabaseAdministrator>
+			<DatabaseAdministratorPassword></DatabaseAdministratorPassword>
 		</EnterpriseGeodatabase>
+		<Server>
+			<AdministratorDirectoryURL></AdministratorDirectoryURL>
+			<UserName></UserName>
+			<Password></Password>
+		</Server>
 	</ArcGIS>
     <Outputs>
-		<EnterpriseGeodatabaseConnection>national_map_geodatabase_1122</EnterpriseGeodatabaseConnection>
+		<Format>FileGDB</Format> <!-- SDE | FileGDB -->
+		<EnterpriseGeodatabaseConnection>national_map_geodatabase</EnterpriseGeodatabaseConnection>
     	<Workspace>D:\GISWorkspace</Workspace>
     	<OutputFolder>NationalMapOutputs</OutputFolder>
     	<ScratchFolder>NationalMapScratch</ScratchFolder>
 		<USStates>RI</USStates>  <!-- ALL | NY | NH;VT;MA;RI;CT;NY;NJ;PA;DE;MD;DC -->
     	<LocatorName>National_Street_Address</LocatorName>
-		<DissolvedNetworkFileGDBName>National_Map_Dissolved_1122</DissolvedNetworkFileGDBName>
+		<GDBName>TF_National_Maps</GDBName>
+		<DissolvedNetworkFileGDBName>National_Map_Dissolved</DissolvedNetworkFileGDBName>
 		<LogFileName>National_Map_Log</LogFileName>
-		<ArcGISServerConnection>arcgis_server_connection.ags</ArcGISServerConnection>
+		<ArcGISServerConnection>arcgis_server.ags</ArcGISServerConnection>
     </Outputs>
 </Configuration>
