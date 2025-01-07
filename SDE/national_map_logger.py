@@ -1,8 +1,18 @@
+import os
+import sys
+import time
+import psutil
+
 import logging
 from logging.handlers import RotatingFileHandler
 import arcpy
 
 from national_map_utility import NationalMapUtility
+
+
+def get_memory_usage():
+    memory = psutil.virtual_memory()
+    return memory.used
 
 
 class NationalMapLogger:
@@ -74,3 +84,39 @@ class NationalMapLogger:
         for handler in NationalMapLogger.logger.handlers:
             if isinstance(handler, logging.FileHandler):
                 handler.close()
+
+    @staticmethod
+    def debug_decorator(func):
+        def wrap(*args, **kwargs):
+            message = f'{func.__name__}'
+            NationalMapLogger.debug(message)
+            result = func(*args, **kwargs)
+            return result
+        return wrap
+
+    @staticmethod
+    def info_decorator(func):
+        def wrap(*args, **kwargs):
+            message = f'{func.__name__}'
+            NationalMapLogger.info(message)
+            result = func(*args, **kwargs)
+            return result
+        return wrap
+
+    @staticmethod
+    def performance_decorator(func):
+        def wrap(*args, **kwargs):
+            start_memory, start_time = get_memory_usage(), time.time()
+
+            result = func(*args, **kwargs)
+
+            end_memory, end_time = get_memory_usage(), time.time()
+            result_memory = sys.getsizeof(result) / 1024.0 ** 2
+            cost_memory = (end_memory - start_memory) / 1024.0 ** 2
+            cost_time = end_time - start_time
+
+            message = f'{func.__name__}, cost time: {cost_time}, cost_memory: {cost_memory} MiB, result: {result_memory} MiB'
+            print(message)
+            return result
+        return wrap
+

@@ -23,8 +23,8 @@ class NationalLocatorFactory(NationalGDBDataFactory):
         NationalMapUtility.ensure_path_exists(out_locator_folder)
         self.locator = self.configuration.data['Outputs']['locator']
 
+    @NationalMapLogger.debug_decorator
     def _create_locator(self):
-        NationalMapLogger.debug('_create_locator')
         arcpy.env.workspace = self._get_dataset()
         address_type = 'StreetAddress'
 

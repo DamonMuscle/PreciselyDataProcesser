@@ -38,8 +38,7 @@ class EnterpriseGeodatabase:
 
         sde_connection_file = self.get_sde_connection()
         if arcpy.Exists(sde_connection_file):
-            print('connection_file exists')
-            return
+            arcpy.management.Delete(sde_connection_file)
 
         instance_name = self.settings['sql_server_instance']
         database_admin = self.settings['database_administrator']

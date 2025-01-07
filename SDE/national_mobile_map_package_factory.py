@@ -27,6 +27,7 @@ class NationalMobileMapPackageFactory:
         del self.locator
         del self.out_map_package
 
+    @NationalMapLogger.debug_decorator
     def _create_scratch_map_file(self):
         project_template = os.path.join('templates', 'mobile_map_package_project_template.aprx')
 
@@ -43,7 +44,6 @@ class NationalMobileMapPackageFactory:
             NationalMapLogger.error(f'{self.locator} not exists!  _create_scratch_map_file Failed!')
             return
 
-        NationalMapLogger.debug('_create_scratch_map_file')
         scratch_map_file = None
         try:
             aprx = arcpy.mp.ArcGISProject(project_template)
@@ -81,11 +81,11 @@ class NationalMobileMapPackageFactory:
 
         self.scratch_map_file = scratch_map_file
 
+    @NationalMapLogger.debug_decorator
     def _create_mobile_map_package(self):
         if self.scratch_map_file is None:
+            NationalMapLogger.error(f'{self.scratch_map_file} not exists!  _create_mobile_map_package Failed!')
             return
-
-        NationalMapLogger.debug('_create_mobile_map_package')
 
         out_map_package = os.path.join(self.scratch_folder, f'{self.gdb_name}.mmpk')
         if arcpy.Exists(out_map_package):

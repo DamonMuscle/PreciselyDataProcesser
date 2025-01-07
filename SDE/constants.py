@@ -1,28 +1,33 @@
 import os
 import arcpy
 
+# Projection
 SR_WEB_MERCATOR = arcpy.SpatialReference(3857)
 SR_WGS_1984 = arcpy.SpatialReference(4326)
 
-
-US_LANGUAGE_CODE = 'EN'
+# Region
 US_STATES = ['ME', 'NH', 'VT', 'MA', 'RI', 'CT', 'NY', 'NJ', 'PA', 'DE',
              'MD', 'DC', 'OH', 'WV', 'VA', 'NC', 'SC', 'MI', 'IN', 'KY',
              'TN', 'GA', 'AL', 'FL', 'MS', 'WI', 'IL', 'MN', 'IA', 'MO',
              'AR', 'LA', 'ND', 'SD', 'NE', 'KS', 'OK', 'TX', 'MT', 'WY',
              'CO', 'NM', 'ID', 'UT', 'AZ', 'WA', 'OR', 'NV', 'CA', 'AK',
              'HI']
+
+# Locator
+US_LANGUAGE_CODE = 'EN'
 COUNTY_CODE = 'USA'
 LOCATOR_LANGUAGE_CODE = 'ENG'
 
-
+# Geoprocessing Settings
 TEMP_MEMORY_LAYER = os.path.join('memory', 'layer')
 
+# Output
 OUT_FORMAT = {
     'SDE': 'SDE',
     'FILE_GDB': 'FILEGDB'
 }
 
+# Data Mapping
 GDB_ITEMS_DICT = {
     'NATIONAL': {
         'DATASET': {
@@ -45,7 +50,8 @@ GDB_ITEMS_DICT = {
         'signpost_table_name': 'national_signposts_streets',
         't_junction_name': 'Junctions',
         'street_railroad_intersect_name': 'STREETINTERSECTR',
-        'street_polygon_name': 'national_street_polygon'
+        'street_polygon_name': 'national_street_polygon',
+        'reference_landmarks_table_name': 'national_reference_landmarks'
     },
     'STATE': {
         'street_name': 'streets',
@@ -68,6 +74,7 @@ GDB_ITEMS_DICT = {
 NATIONAL_NETWORK_DATASET_NAME = 'national_routing_ND'
 DEFAULT_GEODATABASE_SCHEMA = 'DBO'
 
+# Mobile Map Package Settings
 MMPK_DATA_SOURCE = {
     'Map_Turn': GDB_ITEMS_DICT['NATIONAL']['DATASET']['turn_name'],
     'MAP_STREET': GDB_ITEMS_DICT['NATIONAL']['DATASET']['street_name'],

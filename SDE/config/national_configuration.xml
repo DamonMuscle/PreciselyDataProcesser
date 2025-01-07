@@ -27,11 +27,12 @@
     	<Workspace>D:\GISWorkspace</Workspace>
     	<OutputFolder>NationalMapOutputs</OutputFolder>
     	<ScratchFolder>NationalMapScratch</ScratchFolder>
-		<USStates>RI</USStates>  <!-- ALL | NY | NH;VT;MA;RI;CT;NY;NJ;PA;DE;MD;DC -->
+		<USStates>RI</USStates>  <!-- ALL | NY | NH;VT;MA;RI;CT;NY;NJ;PA;DE;MD;DC;VA -->
     	<LocatorName>National_Street_Address</LocatorName>
 		<GDBName>TF_National_Maps</GDBName>
 		<DissolvedNetworkFileGDBName>National_Map_Dissolved</DissolvedNetworkFileGDBName>
 		<LogFileName>National_Map_Log</LogFileName>
 		<ArcGISServerConnection>arcgis_server.ags</ArcGISServerConnection>
+		<ArcGISServerFolder>NationalMaps</ArcGISServerFolder>
     </Outputs>
 </Configuration>

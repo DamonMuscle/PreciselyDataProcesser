@@ -3,6 +3,8 @@ import os
 import constants
 from map_convertor_configuration import MapConvertorConfiguration
 from file_geodatabase import FileGeodatabase
+from national_landmarks_factory import NationalLandmarksFactory
+
 from national_mobile_map_package_factory import NationalMobileMapPackageFactory
 from national_map_logger import NationalMapLogger
 from enterprise_geodatabase import EnterpriseGeodatabase
@@ -21,6 +23,9 @@ from national_locator_factory import NationalLocatorFactory
 
 
 def convert_state_data_for_national(state, configuration):
+    message = f'convert_state_data_for_national, {state}'
+    NationalMapLogger.info(message)
+
     precisely_data_extract = PreciselyDataExtract(state, configuration)
     precisely_data_extract.run()
 
@@ -41,20 +46,15 @@ def convert_state_data_for_national(state, configuration):
     node_converter = StateNodeConverter(state_data_settings, state_exporter, street_data)
     node_converter.run()
 
+    precisely_data_extract.dispose()
+
 
 def generate_national_enterprise_geodatabase(configuration):
     enterprise_geodatabase = EnterpriseGeodatabase(configuration)
     enterprise_geodatabase.run()
 
     sde_connection = enterprise_geodatabase.get_sde_connection()
-    national_importer = NationalDataImporter(configuration, sde_connection)
-    national_importer.run()
-
-    restriction_turn_factory = NationalRestrictionTurnFactory(sde_connection)
-    restriction_turn_factory.run()
-
-    signpost_factory = NationalSignpostFactory(configuration, sde_connection)
-    signpost_factory.run()
+    _generate_national_data(configuration, sde_connection)
 
 
 def generate_national_file_geodatabase(configuration):
@@ -62,20 +62,27 @@ def generate_national_file_geodatabase(configuration):
     file_geodatabase.run()
 
     file_gdb_path = file_geodatabase.get_file_geodatabase()
-    national_importer = NationalDataImporter(configuration, file_gdb_path)
-    national_importer.run()
-
-    restriction_turn_factory = NationalRestrictionTurnFactory(file_gdb_path)
-    restriction_turn_factory.run()
-
-    signpost_factory = NationalSignpostFactory(configuration, file_gdb_path)
-    signpost_factory.run()
+    _generate_national_data(configuration, file_gdb_path)
 
     locator_factory = NationalLocatorFactory(configuration, file_gdb_path)
     locator_factory.run()
 
     network_factory = NationalNetworkFactory(configuration, file_gdb_path)
     network_factory.run()
+
+
+def _generate_national_data(configuration, workspace):
+    national_importer = NationalDataImporter(configuration, workspace)
+    national_importer.run()
+
+    restriction_turn_factory = NationalRestrictionTurnFactory(workspace)
+    restriction_turn_factory.run()
+
+    signpost_factory = NationalSignpostFactory(configuration, workspace)
+    signpost_factory.run()
+
+    landmarks_factory = NationalLandmarksFactory(configuration, workspace)
+    landmarks_factory.run()
 
 
 def main():

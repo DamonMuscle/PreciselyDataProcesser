@@ -5,10 +5,10 @@ import arcpy
 import constants
 
 
-def create_street_local_id_and_oid_lookup(sde_street_feature_class):
+def create_street_local_id_and_oid_lookup(street_feature_class):
     return {
         (item[0]): item[1]
-        for item in arcpy.da.SearchCursor(sde_street_feature_class, ['LocalId', 'OID@'])
+        for item in arcpy.da.SearchCursor(street_feature_class, ['LocalId', 'OID@'])
     }
 
 

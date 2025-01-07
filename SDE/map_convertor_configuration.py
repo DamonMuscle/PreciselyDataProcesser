@@ -170,17 +170,19 @@ class MapConvertorConfiguration:
 
     @staticmethod
     def set_arcpy_environment():
+        if arcpy.GetLogHistory():
+            arcpy.SetLogHistory(False)
+
+        if arcpy.GetLogMetadata():
+            arcpy.SetLogMetadata(False)
+
         arcpy.env.maintainSpatialIndex = True
         arcpy.env.outputMFlag = 'Disabled'
         arcpy.env.outputZFlag = 'Disabled'
         arcpy.env.overwriteOutput = True
         arcpy.env.processorType = 'CPU'
         arcpy.env.parallelProcessingFactor = '80%'
-        if arcpy.GetLogHistory():
-            arcpy.SetLogHistory(False)
-
-        if arcpy.GetLogMetadata():
-            arcpy.SetLogMetadata(False)
+        arcpy.env.autoCommit = 100000
 
     def run(self):
         self._read_precisely_configuration()
@@ -188,5 +190,4 @@ class MapConvertorConfiguration:
         self._read_arcgis_enterprise_geodatabase_configuration()
         self._read_arcgis_server_configuration()
         self._read_outputs_configuration()
-
 

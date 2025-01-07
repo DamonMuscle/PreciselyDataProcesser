@@ -36,18 +36,26 @@ def _convert_feature_class_to_sde(feature_class_or_table, out_feature_class_or_t
             arcpy.management.CopyRows(feature_class_or_table, out_feature_class_or_table)
 
 
-def _append_features_with_cursor(source_feature_class, target_feature_class):
+def _get_source_fields(source_feature_class):
     source_describe = arcpy.Describe(source_feature_class)
     source_fields = source_describe.fields
-    exclude_fields = ['OBJECTID', 'Shape', 'Shape_Length', 'Shape_Area']
-    field_names = [field.name for field in source_fields if field not in exclude_fields]
-    field_names.append('SHAPE@')
+    field_names = [field.name for field in source_fields]
 
+    exclude_system_fields = ['OBJECTID', 'Shape', 'Shape_Length', 'Shape_Area']
+    for exclude_field in exclude_system_fields:
+        if exclude_field in field_names:
+            field_names.remove(exclude_field)
+    field_names.append('SHAPE@')
+    return field_names
+
+
+def _append_features_with_cursor(source_feature_class, target_feature_class):
     memory_layer = constants.TEMP_MEMORY_LAYER
     if arcpy.Exists(memory_layer):
         arcpy.management.Delete(memory_layer)
     arcpy.management.MakeFeatureLayer(source_feature_class, memory_layer)
 
+    field_names = _get_source_fields(source_feature_class)
     with arcpy.da.SearchCursor(memory_layer, field_names) as search_cursor:
         with arcpy.da.InsertCursor(target_feature_class, field_names) as insert_cursor:
             for row in search_cursor:
@@ -101,7 +109,7 @@ class NationalDataImporter:
 
     def _convert_gdb_to_target_workspace(self, gdb_file):
         message = f'_convert_gdb_to_target_workspace {gdb_file}'
-        NationalMapLogger.debug(message)
+        NationalMapLogger.info(message)
 
         for key, name in constants.GDB_ITEMS_DICT['STATE'].items():
             feature_class = os.path.join(gdb_file, name)
@@ -119,8 +127,8 @@ class NationalDataImporter:
                 index_name='idx_state_city'
             )
 
+    @NationalMapLogger.debug_decorator
     def _generate_t_junctions(self):
-        NationalMapLogger.debug(f'_generate_t_junctions')
         street_nodes_feature_class = _get_out_target_feature_class(self.target_workspace, 'node_name')
         street_feature_class = _get_out_target_feature_class(self.target_workspace, 'street_name')
         memory_layer = constants.TEMP_MEMORY_LAYER
@@ -157,8 +165,8 @@ class NationalDataImporter:
         del memory_layer
         arcpy.management.Delete("memory")
 
+    @NationalMapLogger.debug_decorator
     def _generate_street_intersect(self):
-        NationalMapLogger.debug(f'_generate_street_intersect')
         street_feature_class = _get_out_target_feature_class(self.target_workspace, 'street_name')
         railroad_feature_class = _get_out_target_feature_class(self.target_workspace, 'railroad_name')
         input_features = [street_feature_class, railroad_feature_class]
@@ -169,22 +177,29 @@ class NationalDataImporter:
         arcpy.analysis.PairwiseIntersect(input_features, memory_layer, output_type='POINT')
         out_intersect = _get_out_target_feature_class(self.target_workspace, 'street_railroad_intersect_name')
 
+        NationalMapLogger.debug('delete identical intersects')
+        arcpy.management.DeleteIdentical(memory_layer, ['SHAPE'])
+
         NationalMapLogger.debug(f'export {out_intersect}')
         where_clause = (f'FromElevation = ToElevation AND FromElevation_1 = ToElevation_1 AND '
                         f'FromElevation_1 = FromElevation AND ToElevation = ToElevation_1')
+        fid_field_name = f"FID_{constants.GDB_ITEMS_DICT['NATIONAL']['DATASET']['street_name']}"
+        field_mapping = (f'{fid_field_name} "{fid_field_name}" true true false 4 Long 0 0,First,#,'
+                         f"'{memory_layer}',{fid_field_name},-1,-1;")
         arcpy.conversion.ExportFeatures(
             in_features=memory_layer,
             out_features=out_intersect,
             where_clause=where_clause,
-            use_field_alias_as_name='NOT_USE_ALIAS'
+            use_field_alias_as_name='NOT_USE_ALIAS',
+            field_mapping=field_mapping
         )
 
         arcpy.management.Delete(memory_layer)
         del memory_layer
         arcpy.management.Delete("memory")
 
+    @NationalMapLogger.debug_decorator
     def _generate_street_polygon(self):
-        NationalMapLogger.debug(f'_generate_street_polygon')
         street_feature_class = _get_out_target_feature_class(self.target_workspace, 'street_name')
         out_street_polygon_feature_class = _get_out_target_feature_class(self.target_workspace, 'street_polygon_name')
         arcpy.management.FeatureToPolygon(street_feature_class, out_street_polygon_feature_class)

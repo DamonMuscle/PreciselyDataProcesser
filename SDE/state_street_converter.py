@@ -168,20 +168,20 @@ class StateStreetConverter(StateConverter):
         )
         arcpy.management.DeleteField(street_feature_class, ['Join_Count'])
 
+    @NationalMapLogger.debug_decorator
     def _calculate_ramp_street(self):
-        NationalMapLogger.debug(f'_calculate_ramp_street')
         self._cast_field_template(
             field_name='Street',
             field_value='"Ramp"',
             where_clause=f"Street = '' AND (MOD(streettype, 1000) = 10 OR MOD(streettype, 1000) = 510)"
         )
 
+    @NationalMapLogger.debug_decorator
     def _calculate_unnamed_street(self):
-        NationalMapLogger.debug(f'_calculate_unnamed_street')
         self._cast_field_template(field_name='Street', field_value='"Unnamed"', where_clause=f"Street = ''")
 
+    @NationalMapLogger.debug_decorator
     def _calculate_address_range(self):
-        NationalMapLogger.debug(f'_calculate_address_range')
         field_names = ['Fromleft', 'Toleft', 'Fromright', 'Toright']
         field_value = 0
         for field_name in field_names:
@@ -282,7 +282,7 @@ class StateStreetConverter(StateConverter):
     def _calculate_walk_time(self):
         field_name = 'WALK_TIME'
         self._add_field(field_name, 'DOUBLE')
-        self._calculate_field(field_name, '!LENGTH_GEO! / 84!')
+        self._calculate_field(field_name, '!LENGTH_GEO! / 84')
 
     def _calculate_left_time(self):
         field_name = 'LEFT_TIME'
@@ -425,6 +425,7 @@ class StateStreetConverter(StateConverter):
         self._add_field('CreatedOn', 'DATE')
         self._add_field('CreatedBy', 'LONG')
 
+    @NationalMapLogger.info_decorator
     def _modify_street_fields(self):
         self._calculate_state_field()
         self._add_city_field()

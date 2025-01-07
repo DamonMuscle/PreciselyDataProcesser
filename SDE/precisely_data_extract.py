@@ -3,8 +3,6 @@ import shutil
 import arcpy
 from zipfile import ZipFile
 
-from arcgis.features.feature import arcpy
-
 from national_map_utility import NationalMapUtility
 
 
@@ -75,3 +73,6 @@ class PreciselyDataExtract:
     def run(self):
         src_zip_file = self._get_zip_file()
         self._extract_zip(src_zip_file)
+
+    def dispose(self):
+        shutil.rmtree(self.fgdb_location, ignore_errors=True)

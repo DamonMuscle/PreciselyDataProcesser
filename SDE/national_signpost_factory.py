@@ -7,8 +7,8 @@ from national_map_utility import NationalMapUtility
 import constants
 
 
+@NationalMapLogger.debug_decorator
 def _update_signpost_feature_class_id_in_file_gdb(national_signposts_table, feature_class_id):
-    NationalMapLogger.debug('_update_signpost_feature_class_id_in_file_gdb')
     field_names = ['EdgeFCID']
     with arcpy.da.UpdateCursor(national_signposts_table, field_names) as cursor:
         for row in cursor:
@@ -28,8 +28,8 @@ class NationalSignpostFactory(NationalGDBDataFactory):
         del self.output_format
         del self.signpost_feature_class
 
+    @NationalMapLogger.debug_decorator
     def _update_signpost_table_edge_feature_id(self):
-        NationalMapLogger.debug('_update_signpost_table_edge_feature_id')
         national_signposts_table = constants.GDB_ITEMS_DICT['NATIONAL']['signpost_table_name']
         if self.output_format == constants.OUT_FORMAT['SDE']:
             national_streets = constants.GDB_ITEMS_DICT['NATIONAL']['DATASET']['street_name']
@@ -45,9 +45,8 @@ class NationalSignpostFactory(NationalGDBDataFactory):
                          f'WHERE SegmentID = S.LocalId;')
         self.execute_sql(sql_statement)
 
+    @NationalMapLogger.debug_decorator
     def _update_signpost_edge_feature_id_in_file_gdb(self, national_signposts_table):
-        NationalMapLogger.debug('_update_signpost_edge_feature_id_in_file_gdb')
-
         signposts_field_names = ['SegmentID', 'EdgeFID']
         with arcpy.da.UpdateCursor(national_signposts_table, signposts_field_names) as cursor:
             for row in cursor:
@@ -55,8 +54,8 @@ class NationalSignpostFactory(NationalGDBDataFactory):
                 row[1] = self._get_street_object_id(segment_id)
                 cursor.updateRow(row)
 
+    @NationalMapLogger.debug_decorator
     def _update_signpost_table_feature_class_id(self):
-        NationalMapLogger.debug('_update_signpost_table_feature_class_id')
         feature_class_id = self.get_street_feature_class_id()
         national_signposts_table = constants.GDB_ITEMS_DICT['NATIONAL']['signpost_table_name']
         if self.output_format == constants.OUT_FORMAT['SDE']:
@@ -70,8 +69,8 @@ class NationalSignpostFactory(NationalGDBDataFactory):
                          f'SET EdgeFCID = {feature_class_id};')
         self.execute_sql(sql_statement)
 
+    @NationalMapLogger.debug_decorator
     def _add_signpost_table_index(self):
-        NationalMapLogger.debug(f'_add_signpost_table_index')
         index_fields = [('SignpostID', 'IDX_SignpostID'),
                         ('Sequence', 'IDX_Sequence'),
                         ('EdgeFCID', 'IDX_EdgeFCID'),
@@ -83,9 +82,8 @@ class NationalSignpostFactory(NationalGDBDataFactory):
             field_name, index_name = index_filed
             arcpy.management.AddIndex(national_signposts_table, [field_name], index_name)
 
+    @NationalMapLogger.debug_decorator
     def _add_state_and_city(self):
-        NationalMapLogger.debug(f'_add_state_and_city')
-
         sde_dataset = self._get_dataset()
         signpost_name = constants.GDB_ITEMS_DICT['NATIONAL']['DATASET']['signpost_name']
         self.signpost_feature_class = os.path.join(sde_dataset, signpost_name)

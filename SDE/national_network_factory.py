@@ -59,18 +59,14 @@ class NationalNetworkFactory(NationalGDBDataFactory):
             network_dataset_template = os.path.join('templates', 'file_gdb_network_dataset_template.xml')
         return network_dataset_template
 
+    @NationalMapLogger.debug_decorator
     def _create_network_dataset(self):
-        message = '_create_network_dataset'
-        NationalMapLogger.debug(message)
-
         dataset = self._get_dataset()
         self.network_dataset = arcpy.na.CreateNetworkDatasetFromTemplate(self.network_dataset_template, dataset)
         build_network_dataset(self.network_dataset)
 
+    @NationalMapLogger.debug_decorator
     def _copy_network_dataset(self):
-        message = '_copy_network_dataset'
-        NationalMapLogger.debug(message)
-
         result = arcpy.management.CreateFileGDB(self.scratch_folder, SCRATCH_GDB_NAME)
         scratch_network_location = result.getOutput(0)
         scratch_network_dataset = os.path.join(scratch_network_location, 'RoutingND')
@@ -103,10 +99,8 @@ class NationalNetworkFactory(NationalGDBDataFactory):
             associated_data=associated_data
         )
 
+    @NationalMapLogger.debug_decorator
     def _generate_dissolved_network_dataset(self):
-        message = '_generate_dissolved_network_dataset'
-        NationalMapLogger.debug(message)
-
         result = arcpy.management.CreateFileGDB(self.out_geodatabase_folder, self.dissolve_network_file_gdb_name)
         dissolve_network_location = result.getOutput(0)
         network_dataset = os.path.join(self.scratch_network_dataset, constants.NATIONAL_NETWORK_DATASET_NAME)
