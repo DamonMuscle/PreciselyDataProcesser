@@ -1,5 +1,4 @@
 import os
-
 import arcpy
 import constants
 
@@ -83,6 +82,48 @@ def _get_plus_street_mapping_fields(source: str) -> str:
     )
 
 
+global_group_id = 1
+DEFAULT_ARCPY_WORKSPACE = None
+BUFFER_DISTANCE = '500 Meters'
+
+
+def set_street_group_id(feature_class, where_clause=''):
+    global global_group_id
+    with arcpy.da.UpdateCursor(feature_class, ['GroupID'], where_clause) as cursor:
+        for row in cursor:
+            row[0] = global_group_id
+            cursor.updateRow(row)
+            global_group_id += 1
+
+
+@NationalMapLogger.debug_decorator
+def set_empty_street_group_id(feature_class):
+    set_street_group_id(feature_class, "Street = ''")
+
+
+@NationalMapLogger.debug_decorator
+def calculate_group_id(streets_features, state_streets_group_polygon):
+
+    field_name = 'GroupID'
+    out_street_layer = 'temp_street_join_layer'
+    arcpy.management.MakeFeatureLayer(streets_features, out_street_layer, "Street <> ''")
+
+    temp_name = 'GroupID1'
+    arcpy.management.AddSpatialJoin(
+        out_street_layer,
+        state_streets_group_polygon,
+        join_operation='JOIN_ONE_TO_ONE',
+        join_type='KEEP_ALL',
+        field_mapping=f'{temp_name} "{temp_name}" true true false 8 Double 0 0,First,#,streets_Group,{field_name},-1,-1',
+        match_option='COMPLETELY_WITHIN',
+        match_fields='Street Street'
+    )
+
+    arcpy.management.CalculateField(out_street_layer, field_name, f'!{temp_name}!')
+    arcpy.management.RemoveJoin(out_street_layer)
+    arcpy.management.Delete(out_street_layer)
+
+
 class StateStreetConverter(StateConverter):
 
     def __init__(self, data_settings, state_exporter):
@@ -106,10 +147,6 @@ class StateStreetConverter(StateConverter):
     def _drop_fields(self, field_name_list):
         street_feature_class = self.data['state_street_feature_class']
         arcpy.management.DeleteField(street_feature_class, field_name_list)
-
-    def _calculate_field(self, field_name, expression):
-        street_feature_class = self.data['state_street_feature_class']
-        arcpy.management.CalculateField(street_feature_class, field_name, expression)
 
     def _export_state_streets(self):
         street_name = f'usa_{self.state}_streets'
@@ -137,16 +174,6 @@ class StateStreetConverter(StateConverter):
 
         self.data['temp_town_features'] = out_features
 
-    def _calculate_state_field(self):
-        message = f'_calculate_state_field {self.state}'
-        NationalMapLogger.debug(message)
-
-        field_name = 'State'
-        self._add_field(field_name, 'Text', 255)
-
-        field_value = self.state.upper()
-        self._calculate_field(field_name, f'"{field_value}"')
-
     def _add_city_field(self):
         message = f'_add_city_field {self.state}'
         NationalMapLogger.debug(message)
@@ -169,234 +196,44 @@ class StateStreetConverter(StateConverter):
         arcpy.management.DeleteField(street_feature_class, ['Join_Count'])
 
     @NationalMapLogger.debug_decorator
-    def _calculate_ramp_street(self):
-        self._cast_field_template(
-            field_name='Street',
-            field_value='"Ramp"',
-            where_clause=f"Street = '' AND (MOD(streettype, 1000) = 10 OR MOD(streettype, 1000) = 510)"
-        )
+    def _create_street_group(self, street_feature_class):
+        out_state_file_gdb = self.settings['scratch_geodatabase']
+        out_state_streets_buffer_dissolve = os.path.join(out_state_file_gdb, 'streets_Buffer_Dissolve')
+        arcpy.analysis.Buffer(street_feature_class, out_state_streets_buffer_dissolve,
+                              buffer_distance_or_field=BUFFER_DISTANCE,
+                              dissolve_option='LIST',
+                              dissolve_field='STREET',
+                              method='GEODESIC')
+        out_buffer_layer = os.path.join(out_state_file_gdb, 'buffer_layer')
+
+        arcpy.management.MakeFeatureLayer(out_state_streets_buffer_dissolve, out_buffer_layer)
+        arcpy.management.SelectLayerByAttribute(out_buffer_layer, 'NEW_SELECTION', "STREET = ''")
+        arcpy.management.DeleteFeatures(out_buffer_layer)
+        arcpy.management.Delete(out_buffer_layer)
+
+        out_state_streets_group = os.path.join(out_state_file_gdb, 'streets_Group')
+        arcpy.management.MultipartToSinglepart(out_state_streets_buffer_dissolve, out_state_streets_group)
+        arcpy.management.Delete(out_state_streets_buffer_dissolve)
+
+        return out_state_streets_group
 
     @NationalMapLogger.debug_decorator
-    def _calculate_unnamed_street(self):
-        self._cast_field_template(field_name='Street', field_value='"Unnamed"', where_clause=f"Street = ''")
+    def _add_group_id(self):
+        out_state_file_gdb = self.settings['scratch_geodatabase']
+        arcpy.env.workspace = out_state_file_gdb
 
-    @NationalMapLogger.debug_decorator
-    def _calculate_address_range(self):
-        field_names = ['Fromleft', 'Toleft', 'Fromright', 'Toright']
-        field_value = 0
-        for field_name in field_names:
-            NationalMapLogger.debug(f'calculate {field_name}')
-            self._cast_field_template(field_name, field_value, where_clause=f"{field_name} = '-1'")
-
-    def _calculate_default_road_class(self):
-        self._calculate_field('RoadClass', 1)
-
-    def _cast_field_template(self, field_name, field_value, where_clause):
         street_feature_class = self.data['state_street_feature_class']
-        memory_layer = self.create_memory_layer()
-        arcpy.management.MakeFeatureLayer(street_feature_class, memory_layer, where_clause)
-        arcpy.management.CalculateField(memory_layer, field_name, field_value)
-        self.dispose_memory_layer()
+        arcpy.management.AddField(street_feature_class, 'GroupID', 'DOUBLE')
+        set_empty_street_group_id(street_feature_class)
 
-    def _cast_highways(self):
-        self._cast_field_template(field_name='RoadClass', field_value=2, where_clause="ROAD_CLASS IN ('M','N','G','I')")
+        out_streets_group = self._create_street_group(street_feature_class)
+        arcpy.management.AddField(out_streets_group, 'GroupID', 'DOUBLE')
+        set_street_group_id(out_streets_group)
 
-    def _cast_major_road(self):
-        self._cast_field_template(field_name='RoadClass', field_value=6, where_clause="ROAD_CLASS IN ('S','T','P','Q')")
+        calculate_group_id(street_feature_class, out_streets_group)
+        arcpy.management.Delete(out_streets_group)
 
-    def _cast_pedestrian(self):
-        self._cast_field_template(
-            field_name='RoadClass',
-            field_value=10,
-            where_clause="streettype IN (26014,27014,27514,28014,28015,29016,28515,29116,29216) AND ROAD_CLASS = 'Z'"
-        )
-
-    def _cast_ramps(self):
-        self._cast_field_template(field_name='RoadClass', field_value=3,
-                                  where_clause="MOD(streettype, 1000) = 10 OR MOD(streettype, 1000) = 510")
-
-    def _cast_roundabouts(self):
-        self._cast_field_template(field_name='RoadClass', field_value=5, where_clause="MOD(streettype, 1000) = 4")
-
-    def _cast_stairs(self):
-        self._cast_field_template(field_name='RoadClass', field_value=12, where_clause="streettype = 28019")
-
-    def _calculate_road_class(self):
-        message = f'_calculate_road_class {self.state}'
-        NationalMapLogger.debug(message)
-
-        self._add_field('RoadClass', 'LONG')
-        self._calculate_default_road_class()
-        self._cast_highways()
-        self._cast_major_road()
-        self._cast_pedestrian()
-        self._cast_ramps()
-        self._cast_roundabouts()
-        self._cast_stairs()
-
-    def _calculate_default_hierarchy(self):
-        self._calculate_field('Hierarchy', 5)
-
-    def _cast_hierarchy_1(self):
-        self._cast_field_template(field_name='Hierarchy', field_value=1, where_clause="ROAD_CLASS IN ('M','N','G','I')")
-
-    def _cast_hierarchy_2(self):
-        self._cast_field_template(field_name='Hierarchy', field_value=2, where_clause="ROAD_CLASS IN ('P','Q')")
-
-    def _cast_hierarchy_3(self):
-        self._cast_field_template(field_name='Hierarchy', field_value=3, where_clause="ROAD_CLASS IN ('S','T')")
-
-    def _cast_hierarchy_4(self):
-        self._cast_field_template(field_name='Hierarchy', field_value=4, where_clause="ROAD_CLASS IN ('C','F')")
-
-    def _calculate_hierarchy(self):
-        message = f'_calculate_hierarchy {self.state}'
-        NationalMapLogger.debug(message)
-
-        self._add_field('Hierarchy', 'SHORT')
-        self._calculate_default_hierarchy()
-        self._cast_hierarchy_1()
-        self._cast_hierarchy_2()
-        self._cast_hierarchy_3()
-        self._cast_hierarchy_4()
-
-    def _calculate_speed_left(self):
-        field_name = 'Speedleft'
-        self._add_field(field_name, 'LONG')
-        self._calculate_field(field_name, '!SPEED!')
-        self._cast_field_template(field_name, field_value=0, where_clause="Oneway = '2'")
-
-    def _calculate_speed_right(self):
-        field_name = 'Speedright'
-        self._add_field(field_name, 'LONG')
-        self._calculate_field(field_name, '!SPEED!')
-        self._cast_field_template(field_name, field_value=0, where_clause="Oneway = '3'")
-
-    def _calculate_oneway(self):
-        message = f"_calculate_oneway {self.state}"
-        NationalMapLogger.debug(message)
-
-        self._calculate_speed_left()
-        self._calculate_speed_right()
-
-    def _calculate_walk_time(self):
-        field_name = 'WALK_TIME'
-        self._add_field(field_name, 'DOUBLE')
-        self._calculate_field(field_name, '!LENGTH_GEO! / 84')
-
-    def _calculate_left_time(self):
-        field_name = 'LEFT_TIME'
-        self._add_field(field_name, 'DOUBLE')
-        self._cast_field_template(field_name, field_value=0, where_clause='Speedleft = 0')
-        self._cast_field_template(
-            field_name,
-            field_value='(!LENGTH_GEO! / !Speedleft!) * 0.000621371192 * 60',
-            where_clause='Speedleft <> 0'
-        )
-
-    def _calculate_right_time(self):
-        field_name = 'RIGHT_TIME'
-        self._add_field(field_name, 'DOUBLE')
-        self._cast_field_template(field_name, field_value=0, where_clause='Speedright = 0')
-        self._cast_field_template(
-            field_name,
-            field_value='(!LENGTH_GEO! / !Speedright!) * 0.000621371192 * 60',
-            where_clause='Speedright <> 0'
-        )
-
-    def _calculate_travel_time(self):
-        message = f'_calculate_travel_time {self.state}'
-        NationalMapLogger.debug(message)
-
-        self._calculate_walk_time()
-        self._calculate_left_time()
-        self._calculate_right_time()
-
-    def _calculate_traversable_by_vehicle(self):
-        field_name = 'TraversableByVehicle'
-        self._add_field(field_name, 'TEXT', 255)
-        self._cast_field_template(field_name, field_value='"F"', where_clause='Traversable <> 1')
-        self._cast_field_template(field_name, field_value='"T"', where_clause='Traversable = 1')
-
-    def _calculate_traversable_by_walker(self):
-        field_name = 'TraversableByWalkers'
-        self._add_field(field_name, 'TEXT', 255)
-        self._calculate_field(field_name, '"T"')
-
-    def _cast_traversable(self):
-        field_name = 'Traversable'
-        self._add_field(field_name, 'SHORT')
-        self._calculate_field(field_name, 1)
-        self._cast_field_template(field_name, field_value=0, where_clause="ONEWAY = '4' AND RoadClass IN (10, 12)")
-        self._cast_field_template(field_name, field_value=0, where_clause='ROUGHRD = 1')
-
-    def _calculate_traversable(self):
-        self._cast_traversable()
-        self._calculate_traversable_by_vehicle()
-        self._calculate_traversable_by_walker()
-
-    def _add_posted_left(self):
-        field_name = 'PostedLeft'
-        self._add_field(field_name, 'LONG')
-        self._calculate_field(field_name, '!Speedleft!')
-
-    def _add_posted_right(self):
-        field_name = 'PostedRight'
-        self._add_field(field_name, 'LONG')
-        self._calculate_field(field_name, '!Speedright!')
-
-    def _add_from_to_to_from(self):
-        field_name = 'fromtotofrom'
-        self._add_field(field_name, 'TEXT', 5)
-        self._calculate_field(field_name, '!ONEWAY!')
-
-    def _add_left_post_code(self):
-        field_name = 'LeftPostalCode'
-        self._add_field(field_name, 'TEXT', 255)
-        self._calculate_field(field_name, '!Postcode_Left![:5]')
-
-    def _add_right_post_code(self):
-        field_name = 'RightPostalCode'
-        self._add_field(field_name, 'TEXT', 255)
-        self._calculate_field(field_name, '!Postcode_Right![:5]')
-
-    def _add_state_left(self):
-        field_name = 'StateLeft'
-        self._add_field(field_name, 'TEXT', 2)
-        self._calculate_field(field_name, '!LOCALITY_CODE_LEFT![0:2]')
-
-    def _add_state_right(self):
-        field_name = 'StateRight'
-        self._add_field(field_name, 'TEXT', 2)
-        self._calculate_field(field_name, '!LOCALITY_CODE_RIGHT![0:2]')
-
-    def _add_prohibit_crosser(self):
-        field_name = 'ProhibitCrosser'
-        street_feature_class = self.data['state_street_feature_class']
-        if not NationalMapUtility.is_field_exists(street_feature_class, field_name):
-            arcpy.management.AddField(street_feature_class, field_name, 'SHORT', field_is_nullable='NULLABLE')
-            arcpy.management.AssignDefaultToField(street_feature_class, field_name, '0',
-                                                  clear_value='DO_NOT_CLEAR')
-            self._calculate_field(field_name, 0)
-
-    def _add_cfcc(self):
-        field_name = 'Cfcc'
-        self._add_field(field_name, 'TEXT', 255)
-        self._calculate_field(field_name, '!RoadClass!')
-
-    def _duplicate_fields_for_plus(self):
-        message = f'_duplicate_fields_for_plus {self.state}'
-        NationalMapLogger.debug(message)
-
-        self._add_posted_left()
-        self._add_posted_right()
-        # self._add_from_to_to_from()
-        self._add_left_post_code()
-        self._add_right_post_code()
-        # self._add_state_left()
-        # self._add_state_right()
-        self._add_cfcc()
-        self._add_prohibit_crosser()
+        arcpy.env.workspace = DEFAULT_ARCPY_WORKSPACE
 
     def _match_up_to_plus(self):
         message = f'_match_up_to_plus {self.state}'
@@ -405,13 +242,11 @@ class StateStreetConverter(StateConverter):
         # Remove useless fields on routefinder plus
         fields = ['ROUGHRD', 'Postcode_Left', 'Postcode_Right',
                   'LOCALITY_CODE_LEFT', 'LOCALITY_CODE_RIGHT',
-                  'streettype', 'ROAD_CLASS', 'Traversable', 'SPEED']
+                  'streettype', 'ROAD_CLASS', 'SPEED']
         self._drop_fields(fields)
 
         # Add fields
-        self._add_field('GroupID', 'DOUBLE')
         self._add_field('Style', 'TEXT', 255)
-        # self._add_field('Cfcc', 'TEXT', 255)
         self._add_field('Lock', 'TEXT', 255)
         self._add_field('Fow', 'SHORT')
 
@@ -425,20 +260,144 @@ class StateStreetConverter(StateConverter):
         self._add_field('CreatedOn', 'DATE')
         self._add_field('CreatedBy', 'LONG')
 
+    def _alter_street_fields(self):
+        # Add Fields
+        self._add_field('State', 'Text', 255)
+        self._add_field('RoadClass', 'LONG')
+        self._add_field('Hierarchy', 'SHORT')
+        self._add_field('Speedleft', 'LONG')
+        self._add_field('Speedright', 'LONG')
+        self._add_field('WALK_TIME', 'DOUBLE')
+        self._add_field('LEFT_TIME', 'DOUBLE')
+        self._add_field('RIGHT_TIME', 'DOUBLE')
+        self._add_field('TraversableByVehicle', 'TEXT', 255)
+        self._add_field('TraversableByWalkers', 'TEXT', 255)
+
+        self._add_field('PostedLeft', 'LONG')
+        self._add_field('PostedRight', 'LONG')
+        self._add_field('LeftPostalCode', 'TEXT', 255)
+        self._add_field('RightPostalCode', 'TEXT', 255)
+        self._add_field('Cfcc', 'TEXT', 255)
+
+        prohibit_crosser_default_value = 0
+        street_feature_class = self.data['state_street_feature_class']
+        arcpy.management.AddField(street_feature_class, 'ProhibitCrosser', 'SHORT', field_is_nullable='NULLABLE')
+        arcpy.management.AssignDefaultToField(street_feature_class, 'ProhibitCrosser', prohibit_crosser_default_value,
+                                              clear_value='DO_NOT_CLEAR')
+
+    @NationalMapLogger.debug_decorator
+    def _calculate_street_fields(self):
+        street_feature_class = self.data['state_street_feature_class']
+        prohibit_crosser_default_value = 0
+
+        # Update Fields
+        state_value = self.state.upper()
+        address_value = '0'
+
+        edit_fields = ['State', 'Street', 'Fromleft', 'Toleft', 'Fromright',
+                       'Toright', 'RoadClass', 'Hierarchy', 'Speedleft', 'Speedright',
+                       'WALK_TIME', 'LEFT_TIME', 'RIGHT_TIME', 'TraversableByVehicle', 'TraversableByWalkers',
+                       'ProhibitCrosser']
+        duplicate_fields = ['PostedLeft', 'PostedRight', 'LeftPostalCode', 'RightPostalCode', 'Cfcc']
+        selected_fields = ['ROAD_CLASS', 'streettype', 'SPEED', 'Oneway', 'LENGTH_GEO',
+                           'ROUGHRD', 'Postcode_Left', 'Postcode_Right']
+
+        update_fields = edit_fields + duplicate_fields + selected_fields
+        with arcpy.da.UpdateCursor(street_feature_class, update_fields) as cursor:
+            for row in cursor:
+                road_class, streettype, speed, oneway, length = row[21], row[22], row[23], row[24], row[25]
+                roughrd, postcode_left, postcode_right = row[26], row[27], row[28]
+                is_ramp_street = streettype % 1000 == 10 or streettype % 1000 == 510
+
+                # Edit - 'State'
+                row[0] = state_value
+
+                # Edit - 'Street'
+                if row[1] == '':
+                    row[1] = 'Ramp' if is_ramp_street else 'Unnamed'
+
+                # Edit - 'Fromleft', 'Toleft', 'Fromright', 'Toright'
+                if row[2] == '-1':
+                    row[2] = address_value
+                if row[3] == '-1':
+                    row[3] = address_value
+                if row[4] == '-1':
+                    row[4] = address_value
+                if row[5] == '-1':
+                    row[5] = address_value
+
+                # Edit - 'RoadClass'
+                if streettype == 28019:
+                    # _cast_stairs
+                    row[6] = 12
+                elif streettype % 1000 == 4:
+                    # _cast_roundabouts
+                    row[6] = 5
+                elif is_ramp_street:
+                    # _cast_ramps
+                    row[6] = 3
+                elif road_class == 'Z' and streettype in [26014, 27014, 27514, 28014, 28015, 29016, 28515, 29116,
+                                                          29216]:
+                    # _cast_pedestrian
+                    row[6] = 10
+                elif road_class in ['S', 'T', 'P', 'Q']:
+                    # _cast_major_road
+                    row[6] = 6
+                elif road_class in ['M', 'N', 'G', 'I']:
+                    # _cast_highways
+                    row[6] = 2
+                else:
+                    # default
+                    row[6] = 1
+
+                # Duplicate - 'Cfcc'
+                row[20] = row[6]
+
+                # Edit - 'Hierarchy'
+                if road_class in ['M', 'N', 'G', 'I']:
+                    row[7] = 1
+                elif road_class in ['P', 'Q']:
+                    row[7] = 2
+                elif road_class in ['S', 'T']:
+                    row[7] = 3
+                elif road_class in ['C', 'F']:
+                    row[7] = 4
+                else:
+                    row[7] = 5
+
+                # Edit - 'Speedleft', 'Speedright'
+                speed_left = 0 if oneway == '2' else speed
+                speed_right = 0 if oneway == '3' else speed
+                row[8], row[9] = speed_left, speed_right
+                # Duplicate - 'PostedLeft', 'PostedRight'
+                row[16], row[17] = row[8], row[9]
+
+                # Edit - 'WALK_TIME', 'LEFT_TIME', 'RIGHT_TIME'
+                row[10] = length / 84.0
+                row[11] = 0 if speed_left == 0 else (length / speed_left) * 0.000621371192 * 60
+                row[12] = 0 if speed_right == 0 else (length / speed_right) * 0.000621371192 * 60
+
+                # Edit - 'TraversableByVehicle', 'TraversableByWalkers'
+                if (oneway == '4' and road_class in [10, 12]) or (roughrd == 1):
+                    row[13] = 'F'
+                else:
+                    row[13] = 'T'
+                row[14] = 'T'
+
+                # Edit - 'ProhibitCrosser'
+                row[15] = prohibit_crosser_default_value
+
+                # Duplicate - 'LeftPostalCode', 'RightPostalCode'
+                row[18], row[19] = postcode_left[:5], postcode_right[:5]
+
+                cursor.updateRow(row)
+
     @NationalMapLogger.info_decorator
     def _modify_street_fields(self):
-        self._calculate_state_field()
+        self._alter_street_fields()
+        self._add_group_id()
+        self._calculate_street_fields()
         self._add_city_field()
-        self._calculate_ramp_street()
-        self._calculate_unnamed_street()
-        self._calculate_address_range()
-        self._calculate_road_class()
-        self._calculate_hierarchy()
-        self._calculate_oneway()
-        self._calculate_travel_time()
-        self._calculate_traversable()
-
-        self._duplicate_fields_for_plus()
         self._match_up_to_plus()
 
     def _project_state_street(self):

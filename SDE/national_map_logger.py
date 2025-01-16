@@ -115,7 +115,7 @@ class NationalMapLogger:
             cost_memory = (end_memory - start_memory) / 1024.0 ** 2
             cost_time = end_time - start_time
 
-            message = f'{func.__name__}, cost time: {cost_time}, cost_memory: {cost_memory} MiB, result: {result_memory} MiB'
+            message = f'{func.__name__}, cost time: {cost_time} sec., cost_memory: {cost_memory} MiB, result: {result_memory} MiB'
             print(message)
             return result
         return wrap

@@ -15,7 +15,6 @@ class NationalMobileMapPackageFactory:
         self.out_geodatabase_folder = output_configuration['geodatabase_folder']
         self.out_mobile_geodatabase_folder = output_configuration['mobile_geodatabase_folder']
         self.gdb_name = output_configuration['gdb_name']
-        self.locator = output_configuration['locator']
         self.out_map_package = None
 
     def __del__(self):
@@ -24,7 +23,6 @@ class NationalMobileMapPackageFactory:
         del self.out_geodatabase_folder
         del self.out_mobile_geodatabase_folder
         del self.gdb_name
-        del self.locator
         del self.out_map_package
 
     @NationalMapLogger.debug_decorator
@@ -38,10 +36,6 @@ class NationalMobileMapPackageFactory:
         geodatabase = os.path.join(self.out_geodatabase_folder, f'{self.gdb_name}.gdb')
         if not arcpy.Exists(geodatabase):
             NationalMapLogger.error(f'{geodatabase} not exists!  _create_scratch_map_file Failed!')
-            return
-
-        if not arcpy.Exists(self.locator):
-            NationalMapLogger.error(f'{self.locator} not exists!  _create_scratch_map_file Failed!')
             return
 
         scratch_map_file = None
@@ -94,7 +88,6 @@ class NationalMobileMapPackageFactory:
         arcpy.management.CreateMobileMapPackage(
             in_map=self.scratch_map_file,
             output_file=out_map_package,
-            in_locator=self.locator,
             extent='DEFAULT',
             title='NationalMap'
         )
