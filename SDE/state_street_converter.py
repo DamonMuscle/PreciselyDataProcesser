@@ -3,7 +3,6 @@ import arcpy
 import constants
 
 from state_converter import StateConverter
-from national_map_utility import NationalMapUtility
 from national_map_logger import NationalMapLogger
 
 
@@ -249,11 +248,6 @@ class StateStreetConverter(StateConverter):
         self._add_field('Style', 'TEXT', 255)
         self._add_field('Lock', 'TEXT', 255)
         self._add_field('Fow', 'SHORT')
-
-        self._add_field('created_user', 'TEXT', 255)
-        self._add_field('created_date', 'DATE')
-        self._add_field('last_edited_user', 'TEXT', 255)
-        self._add_field('last_edited_date', 'DATE')
 
         self._add_field('LastUpdated', 'DATE')
         self._add_field('LastUpdatedBy', 'LONG')

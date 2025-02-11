@@ -3,7 +3,6 @@ import arcpy
 
 from national_gdb_data_factory import NationalGDBDataFactory
 from national_map_logger import NationalMapLogger
-from national_map_utility import NationalMapUtility
 import constants
 
 
@@ -108,15 +107,8 @@ class NationalSignpostFactory(NationalGDBDataFactory):
             fields='State;City'
         )
 
-    def _match_up_to_plus(self):
-        NationalMapUtility.add_field(self.signpost_feature_class, 'created_user', 'TEXT', 255)
-        NationalMapUtility.add_field(self.signpost_feature_class, 'created_date', 'DATE')
-        NationalMapUtility.add_field(self.signpost_feature_class, 'last_edited_user', 'TEXT', 255)
-        NationalMapUtility.add_field(self.signpost_feature_class, 'last_edited_date', 'DATE')
-
     def run(self):
         self._update_signpost_table_edge_feature_id()
         self._update_signpost_table_feature_class_id()
         self._add_state_and_city()
         self._add_signpost_table_index()
-        self._match_up_to_plus()
