@@ -20,7 +20,7 @@ def _get_out_target_feature_class(target_workspace, key):
     return out_feature_class
 
 
-def _convert_feature_class_to_sde(feature_class_or_table, out_feature_class_or_table):
+def _convert_feature_class_to_workspace(feature_class_or_table, out_feature_class_or_table):
     is_feature_class = NationalMapUtility.is_feature_class(feature_class_or_table)
     is_out_exists = arcpy.Exists(out_feature_class_or_table)
 
@@ -83,11 +83,13 @@ class NationalDataImporter:
     """
 
     def __init__(self, configuration, out_workspace):
+        self.configuration = configuration
         self.states = configuration.data['Outputs']['states']
         self.scratch_gdb_location = configuration.data['Outputs']['scratch_folder']
         self.target_workspace = out_workspace
 
     def __del__(self):
+        del self.configuration
         del self.states
         del self.scratch_gdb_location
         del self.target_workspace
@@ -111,11 +113,18 @@ class NationalDataImporter:
         message = f'_convert_gdb_to_target_workspace {gdb_file}'
         NationalMapLogger.info(message)
 
+        skip_items = []
+        if self.configuration.is_output_sde():
+            skip_items = ['node_name', 'counties_name']
+
         for key, name in constants.GDB_ITEMS_DICT['STATE'].items():
+            if key in skip_items:
+                print(f'_convert_gdb_to_target_workspace skip {key}')
+                continue
             feature_class = os.path.join(gdb_file, name)
             out_feature_class = _get_out_target_feature_class(self.target_workspace, key)
             if out_feature_class:
-                _convert_feature_class_to_sde(feature_class, out_feature_class)
+                _convert_feature_class_to_workspace(feature_class, out_feature_class)
 
     def _add_attribute_index(self):
         street_feature_class = _get_out_target_feature_class(self.target_workspace, 'street_name')
@@ -208,6 +217,8 @@ class NationalDataImporter:
         self._create_dataset()
         self._convert_to_target_workspace()
         self._add_attribute_index()
-        self._generate_t_junctions()
-        self._generate_street_intersect()
-        self._generate_street_polygon()
+        if self.configuration.is_output_file_gdb():
+            # Generate Junctions,national_street_polygon,STREETINTERSECTR for National Map FileGDB only.
+            self._generate_t_junctions()
+            self._generate_street_intersect()
+            self._generate_street_polygon()

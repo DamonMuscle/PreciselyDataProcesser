@@ -107,6 +107,7 @@ def calculate_group_id(streets_features, state_streets_group_polygon):
     out_street_layer = 'temp_street_join_layer'
     arcpy.management.MakeFeatureLayer(streets_features, out_street_layer, "Street <> ''")
 
+    print('- add spatial join')
     temp_name = 'GroupID1'
     arcpy.management.AddSpatialJoin(
         out_street_layer,
@@ -118,7 +119,10 @@ def calculate_group_id(streets_features, state_streets_group_polygon):
         match_fields='Street Street'
     )
 
+    print('- calculate field')
     arcpy.management.CalculateField(out_street_layer, field_name, f'!{temp_name}!')
+
+    print('- remove join')
     arcpy.management.RemoveJoin(out_street_layer)
     arcpy.management.Delete(out_street_layer)
 

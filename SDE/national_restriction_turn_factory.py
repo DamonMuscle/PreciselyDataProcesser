@@ -91,6 +91,7 @@ class NationalRestrictionTurnFactory(NationalGDBDataFactory):
         return turn_features
 
     def _generate_restriction_groups(self):
+        print(f'_generate_restriction_groups')
         restriction_feature_class = self._get_restriction_feature_class()
         fields = ['RESTRICTION_ID', 'SEQUENCE_NUM', 'FEATURE_ID', 'SHAPE@']
         sql_clause = (None, 'ORDER BY RESTRICTION_ID, SEQUENCE_NUM')
@@ -160,6 +161,10 @@ class NationalRestrictionTurnFactory(NationalGDBDataFactory):
             fields='State;City'
         )
 
+    def _drop_restriction_feature_class(self):
+        restriction_feature_class = self._get_restriction_feature_class()
+        arcpy.management.Delete(restriction_feature_class)
+
     def _match_up_to_plus(self):
         turn_feature_class = self._get_turn_feature_class()
         drop_fields = ['RestrictionID']
@@ -169,4 +174,5 @@ class NationalRestrictionTurnFactory(NationalGDBDataFactory):
         self._create_turn_feature_class()
         self._create_turn_features()
         self._add_state_and_city()
+        self._drop_restriction_feature_class()
         self._match_up_to_plus()

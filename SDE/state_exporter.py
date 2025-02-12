@@ -118,7 +118,7 @@ class StateExporter:
         self.temp_town_features = out_features
 
     def _export_state_counties(self):
-        scratch_name = 'temp_railroads_features'
+        scratch_name = 'temp_counties_features'
         counties_name = f'{self.state}counties'
         in_features = self.get_precisely_feature_path(counties_name)
 
@@ -339,4 +339,4 @@ class StateExporter:
         self._export_state_postcodes()
         self._export_state_rivers()
         self._export_state_water_bodies()
-        self._export_state_counties()
+        # self._export_state_counties()

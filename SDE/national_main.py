@@ -43,8 +43,9 @@ def convert_state_data_for_national(state, configuration):
     signpost_convert = StateSignpostConverter(state_data_settings, state_exporter, street_data)
     signpost_convert.run()
 
-    node_converter = StateNodeConverter(state_data_settings, state_exporter, street_data)
-    node_converter.run()
+    if configuration.is_output_file_gdb():
+        node_converter = StateNodeConverter(state_data_settings, state_exporter, street_data)
+        node_converter.run()
 
     precisely_data_extract.dispose()
 
@@ -61,7 +62,7 @@ def generate_national_file_geodatabase(configuration):
     file_geodatabase = FileGeodatabase(configuration)
     file_geodatabase.run()
 
-    file_gdb_path = file_geodatabase.get_file_geodatabase()
+    file_gdb_path = configuration.get_file_geodatabase()
     _generate_national_data(configuration, file_gdb_path)
 
     locator_factory = NationalLocatorFactory(configuration, file_gdb_path)
@@ -81,8 +82,9 @@ def _generate_national_data(configuration, workspace):
     signpost_factory = NationalSignpostFactory(configuration, workspace)
     signpost_factory.run()
 
-    landmarks_factory = NationalLandmarksFactory(configuration, workspace)
-    landmarks_factory.run()
+    if configuration.is_output_file_gdb():
+        landmarks_factory = NationalLandmarksFactory(configuration, workspace)
+        landmarks_factory.run()
 
 
 def main():
@@ -96,14 +98,13 @@ def main():
     for state in output_states:
         convert_state_data_for_national(state, configuration)
 
-    output_format = configuration.data['Outputs']['format']
-    if output_format == constants.OUT_FORMAT['SDE']:
-        generate_national_enterprise_geodatabase(configuration)
-    elif output_format == constants.OUT_FORMAT['FILE_GDB']:
+    if configuration.is_output_file_gdb():
         generate_national_file_geodatabase(configuration)
-
         national_mobile_map_package_factory = NationalMobileMapPackageFactory(configuration)
         national_mobile_map_package_factory.run()
+
+    if configuration.is_output_sde():
+        generate_national_enterprise_geodatabase(configuration)
 
     NationalMapLogger.info('---------- Completed ----------')
 

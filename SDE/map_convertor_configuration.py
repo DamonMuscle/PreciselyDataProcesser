@@ -7,7 +7,7 @@ from xml.etree.ElementTree import ElementTree
 import constants
 from national_map_utility import NationalMapUtility
 
-ALL_US_STATES = 'ALL'
+ALL_US_STATES = 'USA'
 
 
 class MapConvertorConfiguration:
@@ -165,8 +165,43 @@ class MapConvertorConfiguration:
             'log': os.path.join(log_folder, log_file_name),
             'dissolve_network_file_geodatabase_name': dissolve_network_file_geodatabase_name,
             'enterprise_geodatabase_connection': enterprise_geodatabase_connection,
-            'arcgis_server_connection_name': arcgis_server_connection_name
+            'arcgis_server_connection_name': arcgis_server_connection_name,
         }
+
+    def get_scratch_folder(self):
+        return self.data['Outputs']['scratch_folder']
+
+    def get_geodatabase_folder(self):
+        return self.data['Outputs']['geodatabase_folder']
+
+    def get_file_geodatabase(self):
+        geodatabase_folder = self.get_geodatabase_folder()
+        database_name = self.data['Outputs']['gdb_name']
+        return str(os.path.join(geodatabase_folder, f'{database_name}.gdb'))
+
+    def get_dissolved_file_geodatabase(self):
+        geodatabase_folder = self.get_geodatabase_folder()
+        dissolve_network_file_gdb_name = self.data['Outputs']['dissolve_network_file_geodatabase_name']
+        return str(os.path.join(geodatabase_folder, f'{dissolve_network_file_gdb_name}.gdb'))
+
+    def get_mobile_geodatabase(self):
+        out_mobile_geodatabase_folder = self.data['Outputs']['mobile_geodatabase_folder']
+        database_name = self.data['Outputs']['gdb_name']
+        output_folder = str(os.path.join(out_mobile_geodatabase_folder, database_name, 'commondata'))
+        return str(os.path.join(output_folder, f'{database_name.lower()}.geodatabase'))
+
+    def get_locator_file_path(self):
+        output_locator = self.data['Outputs']['locator']
+        return f'{output_locator}.loc'
+
+    def get_arcgis_server_folder_name(self):
+        return self.data['Outputs']['arcgis_server_folder_name']
+
+    def is_output_file_gdb(self):
+        return self.data['Outputs']['format'] == constants.OUT_FORMAT['FILE_GDB']
+
+    def is_output_sde(self):
+        return self.data['Outputs']['format'] == constants.OUT_FORMAT['SDE']
 
     @staticmethod
     def set_arcpy_environment():
