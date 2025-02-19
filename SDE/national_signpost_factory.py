@@ -17,23 +17,20 @@ def _update_signpost_feature_class_id_in_file_gdb(national_signposts_table, feat
 
 class NationalSignpostFactory(NationalGDBDataFactory):
     def __init__(self, configuration, workspace):
-        super().__init__(workspace)
-        output_configuration = configuration.data['Outputs']
-        self.output_format = output_configuration['format']
+        super().__init__(configuration, workspace)
         self.signpost_feature_class = None
 
     def __del__(self):
         super().__del__()
-        del self.output_format
         del self.signpost_feature_class
 
     @NationalMapLogger.debug_decorator
     def _update_signpost_table_edge_feature_id(self):
         national_signposts_table = constants.GDB_ITEMS_DICT['NATIONAL']['signpost_table_name']
-        if self.output_format == constants.OUT_FORMAT['SDE']:
+        if self.configuration.is_output_sde():
             national_streets = constants.GDB_ITEMS_DICT['NATIONAL']['DATASET']['street_name']
             self._update_signpost_edge_feature_id_in_sde(national_signposts_table, national_streets)
-        elif self.output_format == constants.OUT_FORMAT['FILE_GDB']:
+        elif self.configuration.is_output_file_gdb():
             national_signposts_table_path = os.path.join(self.workspace, national_signposts_table)
             self._update_signpost_edge_feature_id_in_file_gdb(national_signposts_table_path)
 
@@ -57,9 +54,9 @@ class NationalSignpostFactory(NationalGDBDataFactory):
     def _update_signpost_table_feature_class_id(self):
         feature_class_id = self.get_street_feature_class_id()
         national_signposts_table = constants.GDB_ITEMS_DICT['NATIONAL']['signpost_table_name']
-        if self.output_format == constants.OUT_FORMAT['SDE']:
+        if self.configuration.is_output_sde():
             self._update_signpost_feature_class_id_in_sde(national_signposts_table, feature_class_id)
-        elif self.output_format == constants.OUT_FORMAT['FILE_GDB']:
+        elif self.configuration.is_output_file_gdb():
             national_signposts_table_path = os.path.join(self.workspace, national_signposts_table)
             _update_signpost_feature_class_id_in_file_gdb(national_signposts_table_path, feature_class_id)
 

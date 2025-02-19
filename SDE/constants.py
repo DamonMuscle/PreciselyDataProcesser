@@ -31,7 +31,7 @@ OUT_FORMAT = {
 GDB_ITEMS_DICT = {
     'NATIONAL': {
         'DATASET': {
-            'name': 'RoutingND',
+            'name': 'newNDS',  # 'RoutingND',
             'node_name': 'national_street_nodes',
             'signpost_name': 'SIGNPOST_FEATURE',  # 'national_signposts',
             'street_name': 'MAP_STREET',  # 'national_streets',
@@ -50,8 +50,8 @@ GDB_ITEMS_DICT = {
         'signpost_table_name': 'SIGNPOST_TABLE',  # 'national_signposts_streets',
         't_junction_name': 'Junctions',
         'street_railroad_intersect_name': 'STREETINTERSECTR',
-        'street_polygon_name': 'national_street_polygon',
-        'reference_landmarks_table_name': 'national_reference_landmarks'
+        'street_polygon_name': 'StreetPolygon',  # 'national_street_polygon',
+        'reference_landmarks_table_name': 'Reference_Landmarks',  # 'national_reference_landmarks'
     },
     'STATE': {
         'street_name': 'streets',
@@ -71,7 +71,7 @@ GDB_ITEMS_DICT = {
     }
 }
 
-NATIONAL_NETWORK_DATASET_NAME = 'national_routing_ND'
+NATIONAL_NETWORK_DATASET_NAME = 'routing_ND'  # 'national_routing_ND'
 DEFAULT_GEODATABASE_SCHEMA = 'DBO'
 
 # Mobile Map Package Settings

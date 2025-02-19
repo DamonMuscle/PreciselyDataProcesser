@@ -29,20 +29,18 @@ def check_in_network_analyst_extension_license():
 
 class NationalNetworkFactory(NationalGDBDataFactory):
     def __init__(self, configuration, workspace):
-        super().__init__(workspace)
+        super().__init__(configuration, workspace)
         output_configuration = configuration.data['Outputs']
-        self.output_format = output_configuration['format']
         self.network_dataset_template = self._get_network_dataset_template()
         self.dissolve_network_file_gdb_name = output_configuration['dissolve_network_file_geodatabase_name']
 
-        self.out_geodatabase_folder = output_configuration['geodatabase_folder']
-        self.scratch_folder = output_configuration['scratch_folder']
+        self.out_geodatabase_folder = self.configuration.get_geodatabase_folder()
+        self.scratch_folder = self.configuration.get_scratch_folder()
         self.network_dataset = None
         self.scratch_network_dataset = None
 
     def __del__(self):
         super().__del__()
-        del self.output_format
         del self.network_dataset_template
         del self.dissolve_network_file_gdb_name
 
@@ -53,9 +51,9 @@ class NationalNetworkFactory(NationalGDBDataFactory):
 
     def _get_network_dataset_template(self):
         network_dataset_template = None
-        if self.output_format == constants.OUT_FORMAT['SDE']:
+        if self.configuration.is_output_sde():
             network_dataset_template = os.path.join('templates', 'sde_network_dataset_template.xml')
-        elif self.output_format == constants.OUT_FORMAT['FILE_GDB']:
+        elif self.configuration.is_output_file_gdb():
             network_dataset_template = os.path.join('templates', 'file_gdb_network_dataset_template.xml')
         return network_dataset_template
 
@@ -69,7 +67,7 @@ class NationalNetworkFactory(NationalGDBDataFactory):
     def _copy_network_dataset(self):
         result = arcpy.management.CreateFileGDB(self.scratch_folder, SCRATCH_GDB_NAME)
         scratch_network_location = result.getOutput(0)
-        scratch_network_dataset = os.path.join(scratch_network_location, 'RoutingND')
+        scratch_network_dataset = os.path.join(scratch_network_location, constants.GDB_ITEMS_DICT['NATIONAL']['DATASET']['name'])
         self.scratch_network_dataset = scratch_network_dataset
 
         dataset = self._get_dataset()
@@ -81,7 +79,7 @@ class NationalNetworkFactory(NationalGDBDataFactory):
         signpost_table_name = constants.GDB_ITEMS_DICT['NATIONAL']['signpost_table_name']
         dataset_name = constants.NATIONAL_NETWORK_DATASET_NAME
         db_schema = constants.DEFAULT_GEODATABASE_SCHEMA
-        feature_class_prefix = f'{db_schema}.' if self.output_format == constants.OUT_FORMAT['SDE'] else ''
+        feature_class_prefix = f'{db_schema}.' if self.configuration.is_output_sde() else ''
 
         associated_data = (
             f'{feature_class_prefix}{street_name} FeatureClass {street_name} #;'

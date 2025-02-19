@@ -7,9 +7,9 @@ from national_map_utility import NationalMapUtility
 class EnterpriseGeodatabase:
     def __init__(self, configuration):
         self.settings = configuration.data['ArcGIS']['enterprise_geodatabase']
-        self.geodatabase_folder = configuration.data['Outputs']['geodatabase_folder']
+        self.geodatabase_folder = configuration.get_geodatabase_folder()
         self.enterprise_geodatabase_connection = configuration.data['Outputs']['enterprise_geodatabase_connection']
-        self.database_name = configuration.data['Outputs']['gdb_name']
+        self.database_name = configuration.get_geodatabase_name()
 
     def __del__(self):
         # print('call EnterpriseGeodatabase __del__')

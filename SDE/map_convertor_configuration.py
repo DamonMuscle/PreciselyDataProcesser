@@ -174,9 +174,12 @@ class MapConvertorConfiguration:
     def get_geodatabase_folder(self):
         return self.data['Outputs']['geodatabase_folder']
 
+    def get_geodatabase_name(self):
+        return self.data['Outputs']['gdb_name']
+
     def get_file_geodatabase(self):
         geodatabase_folder = self.get_geodatabase_folder()
-        database_name = self.data['Outputs']['gdb_name']
+        database_name = self.get_geodatabase_name()
         return str(os.path.join(geodatabase_folder, f'{database_name}.gdb'))
 
     def get_dissolved_file_geodatabase(self):
@@ -186,7 +189,7 @@ class MapConvertorConfiguration:
 
     def get_mobile_geodatabase(self):
         out_mobile_geodatabase_folder = self.data['Outputs']['mobile_geodatabase_folder']
-        database_name = self.data['Outputs']['gdb_name']
+        database_name = self.get_geodatabase_name()
         output_folder = str(os.path.join(out_mobile_geodatabase_folder, database_name, 'commondata'))
         return str(os.path.join(output_folder, f'{database_name.lower()}.geodatabase'))
 

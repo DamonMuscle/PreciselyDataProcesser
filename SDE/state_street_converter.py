@@ -107,7 +107,6 @@ def calculate_group_id(streets_features, state_streets_group_polygon):
     out_street_layer = 'temp_street_join_layer'
     arcpy.management.MakeFeatureLayer(streets_features, out_street_layer, "Street <> ''")
 
-    print('- add spatial join')
     temp_name = 'GroupID1'
     arcpy.management.AddSpatialJoin(
         out_street_layer,
@@ -119,10 +118,8 @@ def calculate_group_id(streets_features, state_streets_group_polygon):
         match_fields='Street Street'
     )
 
-    print('- calculate field')
     arcpy.management.CalculateField(out_street_layer, field_name, f'!{temp_name}!')
 
-    print('- remove join')
     arcpy.management.RemoveJoin(out_street_layer)
     arcpy.management.Delete(out_street_layer)
 
@@ -142,10 +139,6 @@ class StateStreetConverter(StateConverter):
 
     def __del__(self):
         super().__del__()
-
-    def _add_field(self, field_name, field_type, field_length=None):
-        street_feature_class = self.data['state_street_feature_class']
-        NationalMapUtility.add_field(street_feature_class, field_name, field_type, field_length)
 
     def _drop_fields(self, field_name_list):
         street_feature_class = self.data['state_street_feature_class']
@@ -247,38 +240,45 @@ class StateStreetConverter(StateConverter):
                   'LOCALITY_CODE_LEFT', 'LOCALITY_CODE_RIGHT',
                   'streettype', 'ROAD_CLASS', 'SPEED']
         self._drop_fields(fields)
-
+        
         # Add fields
-        self._add_field('Style', 'TEXT', 255)
-        self._add_field('Lock', 'TEXT', 255)
-        self._add_field('Fow', 'SHORT')
-
-        self._add_field('LastUpdated', 'DATE')
-        self._add_field('LastUpdatedBy', 'LONG')
-        self._add_field('CreatedOn', 'DATE')
-        self._add_field('CreatedBy', 'LONG')
+        street_feature_class = self.data['state_street_feature_class']
+        field_description = [
+            ['Style', 'TEXT', 'Style', 255],
+            ['Lock', 'TEXT', 'Lock', 255],
+            ['Fow', 'SHORT', 'Fow'],
+            ['LastUpdated', 'DATE', 'LastUpdated'],
+            ['LastUpdatedBy', 'LONG', 'LastUpdatedBy'],
+            ['CreatedOn', 'DATE', 'CreatedOn'],
+            ['CreatedBy', 'LONG', 'CreatedBy']
+        ]
+        arcpy.management.AddFields(street_feature_class, field_description)
 
     def _alter_street_fields(self):
-        # Add Fields
-        self._add_field('State', 'Text', 255)
-        self._add_field('RoadClass', 'LONG')
-        self._add_field('Hierarchy', 'SHORT')
-        self._add_field('Speedleft', 'LONG')
-        self._add_field('Speedright', 'LONG')
-        self._add_field('WALK_TIME', 'DOUBLE')
-        self._add_field('LEFT_TIME', 'DOUBLE')
-        self._add_field('RIGHT_TIME', 'DOUBLE')
-        self._add_field('TraversableByVehicle', 'TEXT', 255)
-        self._add_field('TraversableByWalkers', 'TEXT', 255)
-
-        self._add_field('PostedLeft', 'LONG')
-        self._add_field('PostedRight', 'LONG')
-        self._add_field('LeftPostalCode', 'TEXT', 255)
-        self._add_field('RightPostalCode', 'TEXT', 255)
-        self._add_field('Cfcc', 'TEXT', 255)
-
         prohibit_crosser_default_value = 0
         street_feature_class = self.data['state_street_feature_class']
+
+        # Add Fields
+        field_description = [
+            ['State', 'TEXT', 'State', 255],
+            ['RoadClass', 'LONG', 'RoadClass'],
+            ['Hierarchy', 'SHORT', 'Hierarchy'],
+            ['Speedleft', 'LONG', 'Speedleft'],
+            ['Speedright', 'LONG', 'Speedright'],
+            ['WALK_TIME', 'DOUBLE', 'WALK_TIME'],
+            ['LEFT_TIME', 'DOUBLE', 'LEFT_TIME'],
+            ['RIGHT_TIME', 'DOUBLE', 'RIGHT_TIME'],
+            ['TraversableByVehicle', 'TEXT', 'TraversableByVehicle', 255],
+            ['TraversableByWalkers', 'TEXT', 'TraversableByWalkers', 255],
+
+            ['PostedLeft', 'LONG', 'PostedLeft'],
+            ['PostedRight', 'LONG', 'PostedRight'],
+            ['LeftPostalCode', 'TEXT', 'LeftPostalCode', 255],
+            ['RightPostalCode', 'TEXT', 'RightPostalCode', 255],
+            ['Cfcc', 'TEXT', 'Cfcc', 255]
+        ]
+        arcpy.management.AddFields(street_feature_class, field_description)
+
         arcpy.management.AddField(street_feature_class, 'ProhibitCrosser', 'SHORT', field_is_nullable='NULLABLE')
         arcpy.management.AssignDefaultToField(street_feature_class, 'ProhibitCrosser', prohibit_crosser_default_value,
                                               clear_value='DO_NOT_CLEAR')

@@ -10,12 +10,10 @@ import constants
 
 class NationalLocatorFactory(NationalGDBDataFactory):
     def __init__(self, configuration, workspace):
-        super().__init__(workspace)
-        self.configuration = configuration
+        super().__init__(configuration, workspace)
         self.locator = None
 
     def __del__(self):
-        del self.configuration
         del self.locator
 
     def _init(self):

@@ -55,7 +55,7 @@ def _calculate_from_to_position(position):
 
 class NationalLandmarksFactory(NationalGDBDataFactory):
     def __init__(self, configuration, workspace):
-        super().__init__(workspace)
+        super().__init__(configuration, workspace)
         street_railroad_intersect_name = constants.GDB_ITEMS_DICT['NATIONAL']['street_railroad_intersect_name']
         self.street_railroad_intersect_feature_class = os.path.join(self.workspace, street_railroad_intersect_name)
         self.street_feature_class_name = constants.GDB_ITEMS_DICT['NATIONAL']['DATASET']['street_name']

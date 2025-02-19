@@ -14,12 +14,14 @@ def create_street_local_id_and_oid_lookup(street_feature_class):
 
 class NationalGDBDataFactory:
 
-    def __init__(self, workspace):
+    def __init__(self, configuration, workspace):
+        self.configuration = configuration
         self.workspace = workspace
         self.street_local_id_oid_lookup = None
         self._init_street_lookup()
 
     def __del__(self):
+        del self.configuration
         del self.workspace
         del self.street_local_id_oid_lookup
 

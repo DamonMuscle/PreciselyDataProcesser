@@ -76,7 +76,7 @@ def _generate_national_data(configuration, workspace):
     national_importer = NationalDataImporter(configuration, workspace)
     national_importer.run()
 
-    restriction_turn_factory = NationalRestrictionTurnFactory(workspace)
+    restriction_turn_factory = NationalRestrictionTurnFactory(configuration, workspace)
     restriction_turn_factory.run()
 
     signpost_factory = NationalSignpostFactory(configuration, workspace)

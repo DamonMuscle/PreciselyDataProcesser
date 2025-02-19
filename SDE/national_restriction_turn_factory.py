@@ -35,8 +35,8 @@ class NationalRestrictionTurnFactory(NationalGDBDataFactory):
     Generate national map turn features from restriction features.
     """
 
-    def __init__(self, workspace):
-        super().__init__(workspace)
+    def __init__(self, configuration, workspace):
+        super().__init__(configuration, workspace)
         self.turn_feature_class = None
 
     def __del__(self):

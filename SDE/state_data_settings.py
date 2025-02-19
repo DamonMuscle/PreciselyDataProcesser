@@ -39,7 +39,7 @@ class StateDataSettings:
         if self.data['scratch_geodatabase'] != '':
             return self.data['scratch_geodatabase']
 
-        scratch_folder = self.configuration.data['Outputs']['scratch_folder']
+        scratch_folder = self.configuration.get_scratch_folder()
         NationalMapUtility.ensure_path_exists(scratch_folder)
         self.data['scratch_folder'] = scratch_folder
 

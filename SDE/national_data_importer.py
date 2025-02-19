@@ -85,7 +85,7 @@ class NationalDataImporter:
     def __init__(self, configuration, out_workspace):
         self.configuration = configuration
         self.states = configuration.data['Outputs']['states']
-        self.scratch_gdb_location = configuration.data['Outputs']['scratch_folder']
+        self.scratch_gdb_location = configuration.get_scratch_folder()
         self.target_workspace = out_workspace
 
     def __del__(self):
